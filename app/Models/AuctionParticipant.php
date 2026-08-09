@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\PlayerRole;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/**
+ * @property int $id
+ * @property int $auction_id
+ * @property string $name
+ * @property bool $is_agent
+ * @property int $call_order
+ */
+#[Fillable(['auction_id', 'name', 'is_agent', 'call_order'])]
+class AuctionParticipant extends Model
+{
+    /**
+     * @return BelongsTo<Auction, $this>
+     */
+    public function auction(): BelongsTo
+    {
+        return $this->belongsTo(Auction::class);
+    }
+
+    /**
+     * @return HasMany<PlayerAssignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(PlayerAssignment::class);
+    }
+
+    /**
+     * @return HasMany<AuctionCall, $this>
+     */
+    public function calls(): HasMany
+    {
+        return $this->hasMany(AuctionCall::class, 'called_by_auction_participant_id');
+    }
+
+    public function budgetRemaining(): int
+    {
+        return $this->auction->budget_per_participant - (int) $this->assignments()->sum('price');
+    }
+
+    public function slotsFilledFor(PlayerRole $role): int
+    {
+        return $this->assignments()->whereHas('player', fn ($query) => $query->where('role', $role))->count();
+    }
+
+    public function hasCompletedRole(PlayerRole $role): bool
+    {
+        return $this->slotsFilledFor($role) >= $this->auction->slotsFor($role);
+    }
+
+    /**
+     * @return Collection<int, PlayerAssignment>
+     */
+    public function rosterFor(PlayerRole $role): Collection
+    {
+        return $this->assignments()->whereHas('player', fn ($query) => $query->where('role', $role))
+            ->with('player')
+            ->get();
+    }
+
+    /**
+     * Serialize this participant's live board state (budget, roster slots,
+     * players bought) for the Inertia response and, later, the AI context.
+     *
+     * @return array<string, mixed>
+     */
+    public function toBoardArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'is_agent' => $this->is_agent,
+            'call_order' => $this->call_order,
+            'budget_remaining' => $this->budgetRemaining(),
+            'slots' => collect(PlayerRole::cases())->map(fn (PlayerRole $role) => [
+                'role' => $role->value,
+                'label' => $role->label(),
+                'filled' => $this->slotsFilledFor($role),
+                'total' => $this->auction->slotsFor($role),
+            ])->values(),
+            'roster' => $this->assignments()->with('player.team')->get()->map(fn (PlayerAssignment $assignment) => [
+                'assignment_id' => $assignment->id,
+                'price' => $assignment->price,
+                'player_id' => $assignment->player->id,
+                'player_name' => $assignment->player->name,
+                'role' => $assignment->player->role->value,
+                'team' => $assignment->player->team?->name,
+            ])->values(),
+        ];
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_agent' => 'boolean',
+        ];
+    }
+}

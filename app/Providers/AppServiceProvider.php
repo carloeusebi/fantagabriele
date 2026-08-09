@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
+use App\AuctionAssistant\Contracts\AuctionAssistant;
+use App\AuctionAssistant\LaravelAiAuctionAssistant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -16,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(AuctionAssistant::class, LaravelAiAuctionAssistant::class);
     }
 
     /**

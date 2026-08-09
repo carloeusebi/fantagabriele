@@ -6,6 +6,7 @@ use App\Enums\PlayerRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -35,6 +36,14 @@ class Player extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /**
+     * @return HasMany<PlayerAssignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(PlayerAssignment::class);
     }
 
     /**
