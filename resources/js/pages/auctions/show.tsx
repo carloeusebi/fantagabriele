@@ -136,6 +136,7 @@ function UnlockedAuctionShow({
     auction,
     participants,
     availablePlayers,
+    unassignedPlayers,
     assignments,
     viewer,
     permissions,
@@ -144,6 +145,7 @@ function UnlockedAuctionShow({
     auction: Auction;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
+    unassignedPlayers: Player[];
     assignments: PlayerAssignment[];
     viewer: AuctionViewer | null;
     permissions: AuctionPermissions;
@@ -243,6 +245,9 @@ function UnlockedAuctionShow({
                                             auctionId={auction.id}
                                             assignments={assignments}
                                             participants={participants}
+                                            unassignedPlayers={
+                                                unassignedPlayers
+                                            }
                                             canResolve={permissions.resolveCall}
                                         />
                                     </div>

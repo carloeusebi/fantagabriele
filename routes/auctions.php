@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('auctions/{auction}/call', [AuctionCallController::class, 'destroy'])->name('auctions.call.destroy');
 
     Route::post('auctions/{auction}/assignments', [AuctionAssignmentController::class, 'store'])->name('auctions.assignments.store');
+    Route::post('auctions/{auction}/assignments/manual', [AuctionAssignmentController::class, 'storeManual'])->name('auctions.assignments.store-manual');
     Route::patch('auctions/{auction}/assignments/{assignment}', [AuctionAssignmentController::class, 'update'])->name('auctions.assignments.update');
     Route::delete('auctions/{auction}/assignments/{assignment}', [AuctionAssignmentController::class, 'destroy'])->name('auctions.assignments.destroy');
 
