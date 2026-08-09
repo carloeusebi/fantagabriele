@@ -30,8 +30,8 @@
             }
         </style>
 
-        <link rel="icon" href="/logo.jpeg" type="image/jpeg">
-        <link rel="apple-touch-icon" href="/logo.jpeg">
+        <link rel="icon" href="/logo.png" type="image/png">
+        <link rel="apple-touch-icon" href="/logo.png">
 
         @fonts
 
