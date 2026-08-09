@@ -26,6 +26,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useAuctionPresence } from '@/hooks/use-auction-presence';
+import { useAuctionsIndexChannel } from '@/hooks/use-auctions-index-channel';
 import auctions from '@/routes/auctions';
 import type { Auth } from '@/types';
 import type { Auction } from '@/types/auction';
@@ -57,6 +59,8 @@ export default function AuctionsIndex({
     auctions: Auction[];
 }) {
     const { auth } = usePage<PageProps>().props;
+
+    useAuctionsIndexChannel();
 
     return (
         <>
@@ -92,6 +96,7 @@ export default function AuctionsIndex({
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Nome</TableHead>
+                                    <TableHead>Creata da</TableHead>
                                     <TableHead>Stato</TableHead>
                                     <TableHead>Partecipanti</TableHead>
                                     <TableHead />
@@ -108,6 +113,9 @@ export default function AuctionsIndex({
                                                 {auction.name}
                                             </Link>
                                         </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {auction.user?.name ?? '—'}
+                                        </TableCell>
                                         <TableCell>
                                             <Badge
                                                 variant={
@@ -120,7 +128,13 @@ export default function AuctionsIndex({
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            {auction.participants_count}
+                                            <LobbyCount
+                                                auctionId={auction.id}
+                                                total={
+                                                    auction.participants_count ??
+                                                    0
+                                                }
+                                            />
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {auction.user_id ===
@@ -138,6 +152,22 @@ export default function AuctionsIndex({
                 )}
             </div>
         </>
+    );
+}
+
+function LobbyCount({
+    auctionId,
+    total,
+}: {
+    auctionId: number;
+    total: number;
+}) {
+    const online = useAuctionPresence(auctionId);
+
+    return (
+        <span className="tabular-nums">
+            {online.length}/{total}
+        </span>
     );
 }
 
