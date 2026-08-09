@@ -2,6 +2,8 @@
 
 namespace App\AuctionAssistant;
 
+use App\Ai\Agents\NarrateBidAgent;
+use App\Ai\Agents\NarrateCallAgent;
 use App\Ai\Agents\SuggestCallAgent;
 use App\Ai\Agents\SuggestMaxBidAgent;
 use App\AuctionAssistant\Contracts\AuctionAssistant;
@@ -10,8 +12,10 @@ use App\AuctionAssistant\Data\BidSuggestionContext;
 use App\AuctionAssistant\Data\CallSuggestion;
 use App\AuctionAssistant\Data\CallSuggestionContext;
 use App\Exceptions\Auction\AuctionRuleException;
+use Generator;
 use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Responses\StructuredAgentResponse;
+use Laravel\Ai\Streaming\Events\TextDelta;
 use RuntimeException;
 
 /**
@@ -57,5 +61,43 @@ class LaravelAiAuctionAssistant implements AuctionAssistant
         $maxPrice = max(0, min((int) $response['max_price'], $budgetRemaining));
 
         return new BidSuggestion($maxPrice, (string) $response['reasoning']);
+    }
+
+    /**
+     * @return Generator<int, string, mixed, CallSuggestion>
+     */
+    public function streamCall(CallSuggestionContext $context): Generator
+    {
+        $stream = (new NarrateCallAgent($context))->stream(
+            'Racconta il tuo ragionamento su quale giocatore chiamare.',
+            provider: Lab::DeepSeek,
+        );
+
+        foreach ($stream as $event) {
+            if ($event instanceof TextDelta) {
+                yield $event->delta;
+            }
+        }
+
+        return $this->suggestCall($context);
+    }
+
+    /**
+     * @return Generator<int, string, mixed, BidSuggestion>
+     */
+    public function streamMaxBid(BidSuggestionContext $context): Generator
+    {
+        $stream = (new NarrateBidAgent($context))->stream(
+            'Racconta il tuo ragionamento sul prezzo massimo da offrire.',
+            provider: Lab::DeepSeek,
+        );
+
+        foreach ($stream as $event) {
+            if ($event instanceof TextDelta) {
+                yield $event->delta;
+            }
+        }
+
+        return $this->suggestMaxBid($context);
     }
 }

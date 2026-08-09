@@ -29,6 +29,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('auctions/{auction}/assignments/{assignment}', [AuctionAssignmentController::class, 'update'])->name('auctions.assignments.update');
     Route::delete('auctions/{auction}/assignments/{assignment}', [AuctionAssignmentController::class, 'destroy'])->name('auctions.assignments.destroy');
 
-    Route::post('auctions/{auction}/advisor/call', [AuctionAdvisorController::class, 'suggestCall'])->name('auctions.advisor.call');
-    Route::post('auctions/{auction}/advisor/bid', [AuctionAdvisorController::class, 'suggestMaxBid'])->name('auctions.advisor.bid');
+    Route::get('auctions/{auction}/advisor/call', [AuctionAdvisorController::class, 'suggestCall'])->name('auctions.advisor.call');
+    Route::get('auctions/{auction}/advisor/bid', [AuctionAdvisorController::class, 'suggestMaxBid'])->name('auctions.advisor.bid');
 });
