@@ -2,17 +2,20 @@ import { RoleLetter } from '@/components/auctions/role-letter';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { hasCompletedRole } from '@/lib/auction';
 import { ROLE_ORDER, roleBadgeClasses } from '@/lib/role-colors';
 import { cn } from '@/lib/utils';
-import type { AuctionParticipant, RosterEntry } from '@/types/auction';
+import type { AuctionParticipant, PlayerRoleValue, RosterEntry } from '@/types/auction';
 
 export function ParticipantBoard({
     participants,
     currentTurnParticipantId,
+    currentPhase = null,
     onlineUserIds = [],
 }: {
     participants: AuctionParticipant[];
     currentTurnParticipantId: number | null;
+    currentPhase?: PlayerRoleValue | null;
     onlineUserIds?: number[];
 }) {
     return (
@@ -23,6 +26,8 @@ export function ParticipantBoard({
                     className={cn(
                         participant.id === currentTurnParticipantId &&
                             'border-primary',
+                        hasCompletedRole(participant, currentPhase) &&
+                            'opacity-50',
                     )}
                 >
                     <CardHeader>
