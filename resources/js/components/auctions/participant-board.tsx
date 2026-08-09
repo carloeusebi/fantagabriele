@@ -6,9 +6,11 @@ import type { AuctionParticipant } from '@/types/auction';
 export function ParticipantBoard({
     participants,
     currentTurnParticipantId,
+    onlineUserIds = [],
 }: {
     participants: AuctionParticipant[];
     currentTurnParticipantId: number | null;
+    onlineUserIds?: number[];
 }) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -23,6 +25,15 @@ export function ParticipantBoard({
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between gap-2">
                             <span className="flex items-center gap-2">
+                                {participant.claimed_by_user_id !== null &&
+                                    onlineUserIds.includes(
+                                        participant.claimed_by_user_id,
+                                    ) && (
+                                        <span
+                                            className="size-2 shrink-0 rounded-full bg-green-500"
+                                            title="Online"
+                                        />
+                                    )}
                                 {participant.name}
                                 {participant.is_agent && (
                                     <Badge variant="outline">IA</Badge>

@@ -2,6 +2,7 @@ import { router, useHttp } from '@inertiajs/react';
 import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { PlayerCombobox } from '@/components/auctions/player-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,10 +27,12 @@ export function CurrentCallPanel({
     auction,
     participants,
     availablePlayers,
+    canAct,
 }: {
     auction: Auction;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
+    canAct: boolean;
 }) {
     const call = auction.current_call;
     const agentParticipant = participants.find((p) => p.is_agent) ?? null;
@@ -41,6 +44,7 @@ export function CurrentCallPanel({
                 call={call}
                 participants={participants}
                 canAskForBidAdvice={agentParticipant !== null}
+                canAct={canAct}
             />
         );
     }
@@ -59,6 +63,7 @@ export function CurrentCallPanel({
                 agentParticipant !== null &&
                 agentParticipant.id === auction.current_turn_participant?.id
             }
+            canAct={canAct}
         />
     );
 }
@@ -69,12 +74,14 @@ function OpenCallForm({
     participants,
     availablePlayers,
     canAskForCallAdvice,
+    canAct,
 }: {
     auctionId: number;
     defaultCallerId: number | null;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
     canAskForCallAdvice: boolean;
+    canAct: boolean;
 }) {
     const [playerId, setPlayerId] = useState<string>('');
     const [callerId, setCallerId] = useState<string>(
@@ -133,58 +140,52 @@ function OpenCallForm({
                     </div>
                 )}
 
-                <form
-                    onSubmit={submit}
-                    className="flex flex-col gap-4 sm:flex-row sm:items-end"
-                >
-                    <div className="grid flex-1 gap-2">
-                        <Label>Giocatore</Label>
-                        <Select value={playerId} onValueChange={setPlayerId}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Seleziona giocatore" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {availablePlayers.map((player) => (
-                                        <SelectItem
-                                            key={player.id}
-                                            value={String(player.id)}
-                                        >
-                                            {player.name}
-                                            {player.team
-                                                ? ` (${player.team.name})`
-                                                : ''}{' '}
-                                            — FVM {player.fvm ?? '—'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                {canAct ? (
+                    <form
+                        onSubmit={submit}
+                        className="flex flex-col gap-4 sm:flex-row sm:items-end"
+                    >
+                        <div className="grid flex-1 gap-2">
+                            <Label>Giocatore</Label>
+                            <PlayerCombobox
+                                players={availablePlayers}
+                                value={playerId}
+                                onChange={setPlayerId}
+                            />
+                        </div>
 
-                    <div className="grid gap-2 sm:w-56">
-                        <Label>Chiamato da</Label>
-                        <Select value={callerId} onValueChange={setCallerId}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Partecipante" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {participants.map((participant) => (
-                                        <SelectItem
-                                            key={participant.id}
-                                            value={String(participant.id)}
-                                        >
-                                            {participant.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                        <div className="grid gap-2 sm:w-56">
+                            <Label>Chiamato da</Label>
+                            <Select
+                                value={callerId}
+                                onValueChange={setCallerId}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Partecipante" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {participants.map((participant) => (
+                                            <SelectItem
+                                                key={participant.id}
+                                                value={String(participant.id)}
+                                            >
+                                                {participant.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    <Button type="submit">Chiama</Button>
-                </form>
+                        <Button type="submit">Chiama</Button>
+                    </form>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        Solo l'organizzatore o un partecipante possono chiamare
+                        un giocatore.
+                    </p>
+                )}
             </CardContent>
         </Card>
     );
@@ -195,11 +196,13 @@ function ResolveCallForm({
     call,
     participants,
     canAskForBidAdvice,
+    canAct,
 }: {
     auctionId: number;
     call: NonNullable<Auction['current_call']>;
     participants: AuctionParticipant[];
     canAskForBidAdvice: boolean;
+    canAct: boolean;
 }) {
     const [participantId, setParticipantId] = useState('');
     const [price, setPrice] = useState('');
@@ -270,50 +273,61 @@ function ResolveCallForm({
                     </div>
                 )}
 
-                <form
-                    onSubmit={assign}
-                    className="flex flex-col gap-4 sm:flex-row sm:items-end"
-                >
-                    <div className="grid gap-2 sm:w-56">
-                        <Label>Aggiudicato a</Label>
-                        <Select
-                            value={participantId}
-                            onValueChange={setParticipantId}
+                {canAct ? (
+                    <form
+                        onSubmit={assign}
+                        className="flex flex-col gap-4 sm:flex-row sm:items-end"
+                    >
+                        <div className="grid gap-2 sm:w-56">
+                            <Label>Aggiudicato a</Label>
+                            <Select
+                                value={participantId}
+                                onValueChange={setParticipantId}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Partecipante" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {participants.map((participant) => (
+                                            <SelectItem
+                                                key={participant.id}
+                                                value={String(participant.id)}
+                                            >
+                                                {participant.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label>Prezzo</Label>
+                            <Input
+                                type="number"
+                                min={1}
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                className="w-28"
+                            />
+                        </div>
+
+                        <Button type="submit">Registra</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={unsold}
                         >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Partecipante" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {participants.map((participant) => (
-                                        <SelectItem
-                                            key={participant.id}
-                                            value={String(participant.id)}
-                                        >
-                                            {participant.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label>Prezzo</Label>
-                        <Input
-                            type="number"
-                            min={1}
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            className="w-28"
-                        />
-                    </div>
-
-                    <Button type="submit">Registra</Button>
-                    <Button type="button" variant="outline" onClick={unsold}>
-                        Nessuno se lo aggiudica
-                    </Button>
-                </form>
+                            Nessuno se lo aggiudica
+                        </Button>
+                    </form>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        Solo l'organizzatore o un partecipante possono
+                        registrare l'esito.
+                    </p>
+                )}
             </CardContent>
         </Card>
     );

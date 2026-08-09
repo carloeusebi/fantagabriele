@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Auction;
 
 use App\Enums\PlayerRole;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auction\JoinAuctionRequest;
 use App\Http\Requests\Auction\StoreAuctionRequest;
 use App\Http\Requests\Auction\UpdateAuctionStatusRequest;
 use App\Models\Auction;
+use App\Models\AuctionParticipant;
 use App\Models\Player;
 use App\Models\PlayerAssignment;
 use App\Services\Auction\AuctionEngine;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 use LogicException;
@@ -33,10 +37,13 @@ class AuctionController extends Controller
     public function store(StoreAuctionRequest $request): RedirectResponse
     {
         $auction = DB::transaction(function () use ($request) {
-            $auction = Auction::query()->create($request->safe()->only([
-                'name', 'budget_per_participant',
-                'slots_goalkeeper', 'slots_defender', 'slots_midfielder', 'slots_forward',
-            ]));
+            $auction = Auction::query()->create([
+                ...$request->safe()->only([
+                    'name', 'budget_per_participant',
+                    'slots_goalkeeper', 'slots_defender', 'slots_midfielder', 'slots_forward',
+                ]),
+                'user_id' => $request->user()->id,
+            ]);
 
             foreach ($request->validated('participants') as $index => $participant) {
                 $auction->participants()->create([
@@ -52,11 +59,13 @@ class AuctionController extends Controller
         return to_route('auctions.show', $auction);
     }
 
-    public function show(Auction $auction): Response
+    public function show(Request $request, Auction $auction): Response
     {
         $auction->load(['currentTurnParticipant', 'currentCall.player.team', 'currentCall.calledBy']);
 
-        $participants = $auction->participants()->orderBy('call_order')->get()->map->toBoardArray()->values();
+        $participants = $auction->participants()->orderBy('call_order')->with('viewer.user')->get()->map->toBoardArray()->values();
+
+        $viewer = $auction->viewers()->where('user_id', $request->user()->id)->first();
 
         $availablePlayers = $auction->current_phase
             ? Player::query()
@@ -78,6 +87,13 @@ class AuctionController extends Controller
             'participants' => $participants,
             'availablePlayers' => $availablePlayers,
             'assignments' => $assignments,
+            'viewer' => $viewer ? [
+                'auction_participant_id' => $viewer->auction_participant_id,
+            ] : null,
+            'permissions' => [
+                'manage' => Gate::allows('manageParticipants', $auction),
+                'act' => Gate::allows('act', $auction),
+            ],
             'roles' => collect(PlayerRole::cases())->map(fn (PlayerRole $role) => [
                 'value' => $role->value,
                 'label' => $role->label(),
@@ -85,8 +101,21 @@ class AuctionController extends Controller
         ]);
     }
 
+    public function join(JoinAuctionRequest $request, Auction $auction, AuctionEngine $engine): RedirectResponse
+    {
+        $participant = $request->validated('auction_participant_id')
+            ? AuctionParticipant::query()->findOrFail((int) $request->validated('auction_participant_id'))
+            : null;
+
+        $engine->joinAuction($auction, $request->user(), $participant);
+
+        return back();
+    }
+
     public function updateStatus(UpdateAuctionStatusRequest $request, Auction $auction, AuctionEngine $engine): RedirectResponse
     {
+        Gate::authorize('updateStatus', $auction);
+
         match ((string) $request->validated('action')) {
             'start' => $engine->start($auction),
             'pause' => $engine->pause($auction),
@@ -95,5 +124,14 @@ class AuctionController extends Controller
         };
 
         return back();
+    }
+
+    public function destroy(Auction $auction): RedirectResponse
+    {
+        Gate::authorize('delete', $auction);
+
+        $auction->delete();
+
+        return to_route('auctions.index');
     }
 }

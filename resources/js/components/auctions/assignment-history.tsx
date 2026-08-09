@@ -36,10 +36,12 @@ export function AssignmentHistory({
     auctionId,
     assignments,
     participants,
+    canAct,
 }: {
     auctionId: number;
     assignments: PlayerAssignment[];
     participants: AuctionParticipant[];
+    canAct: boolean;
 }) {
     if (assignments.length === 0) {
         return (
@@ -75,15 +77,19 @@ export function AssignmentHistory({
                             <TableCell>{assignment.participant.name}</TableCell>
                             <TableCell>{assignment.price}</TableCell>
                             <TableCell className="flex justify-end gap-2">
-                                <CorrectAssignmentDialog
-                                    auctionId={auctionId}
-                                    assignment={assignment}
-                                    participants={participants}
-                                />
-                                <RevertAssignmentDialog
-                                    auctionId={auctionId}
-                                    assignment={assignment}
-                                />
+                                {canAct && (
+                                    <>
+                                        <CorrectAssignmentDialog
+                                            auctionId={auctionId}
+                                            assignment={assignment}
+                                            participants={participants}
+                                        />
+                                        <RevertAssignmentDialog
+                                            auctionId={auctionId}
+                                            assignment={assignment}
+                                        />
+                                    </>
+                                )}
                             </TableCell>
                         </TableRow>
                     ))}

@@ -10,11 +10,14 @@ use App\Models\Auction;
 use App\Models\AuctionParticipant;
 use App\Services\Auction\AuctionEngine;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 
 class AuctionParticipantController extends Controller
 {
     public function store(StoreParticipantRequest $request, Auction $auction, AuctionEngine $engine): RedirectResponse
     {
+        Gate::authorize('manageParticipants', $auction);
+
         $engine->addParticipant($auction, $request->validated('name'));
 
         return back();
@@ -22,6 +25,8 @@ class AuctionParticipantController extends Controller
 
     public function update(UpdateParticipantRequest $request, Auction $auction, AuctionParticipant $participant, AuctionEngine $engine): RedirectResponse
     {
+        Gate::authorize('manageParticipants', $auction);
+
         abort_unless($participant->auction_id === $auction->id, 404);
 
         if ($request->boolean('is_agent')) {
@@ -37,6 +42,8 @@ class AuctionParticipantController extends Controller
 
     public function destroy(Auction $auction, AuctionParticipant $participant, AuctionEngine $engine): RedirectResponse
     {
+        Gate::authorize('manageParticipants', $auction);
+
         abort_unless($participant->auction_id === $auction->id, 404);
 
         $engine->removeParticipant($participant);
@@ -46,6 +53,8 @@ class AuctionParticipantController extends Controller
 
     public function reorder(ReorderParticipantsRequest $request, Auction $auction, AuctionEngine $engine): RedirectResponse
     {
+        Gate::authorize('manageParticipants', $auction);
+
         $engine->reorderParticipants($auction, $request->validated('order'));
 
         return back();

@@ -1,8 +1,16 @@
-import { Head, Link } from '@inertiajs/react';
-import { Gavel, Plus } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Gavel, Plus, Trash2 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import {
     Empty,
     EmptyDescription,
@@ -19,6 +27,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import auctions from '@/routes/auctions';
+import type { Auth } from '@/types';
 import type { Auction } from '@/types/auction';
 
 const statusLabels: Record<Auction['status'], string> = {
@@ -38,11 +47,17 @@ const statusVariants: Record<
     completed: 'secondary',
 };
 
+type PageProps = {
+    auth: Auth;
+};
+
 export default function AuctionsIndex({
     auctions: list,
 }: {
     auctions: Auction[];
 }) {
+    const { auth } = usePage<PageProps>().props;
+
     return (
         <>
             <Head title="Aste" />
@@ -79,6 +94,7 @@ export default function AuctionsIndex({
                                     <TableHead>Nome</TableHead>
                                     <TableHead>Stato</TableHead>
                                     <TableHead>Partecipanti</TableHead>
+                                    <TableHead />
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -106,6 +122,14 @@ export default function AuctionsIndex({
                                         <TableCell>
                                             {auction.participants_count}
                                         </TableCell>
+                                        <TableCell className="text-right">
+                                            {auction.user_id ===
+                                                auth.user.id && (
+                                                <DeleteAuctionDialog
+                                                    auction={auction}
+                                                />
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -114,6 +138,43 @@ export default function AuctionsIndex({
                 )}
             </div>
         </>
+    );
+}
+
+function DeleteAuctionDialog({ auction }: { auction: Auction }) {
+    function destroy() {
+        router.delete(auctions.destroy(auction.id).url);
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button type="button" variant="ghost" size="icon">
+                    <Trash2 />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogTitle>Eliminare "{auction.name}"?</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                    Verranno eliminati anche partecipanti, chiamate e
+                    assegnazioni di questa asta. L'operazione non è reversibile.
+                </p>
+                <DialogFooter className="gap-2">
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">
+                            Annulla
+                        </Button>
+                    </DialogClose>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={destroy}
+                    >
+                        Elimina
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 

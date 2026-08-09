@@ -42,9 +42,20 @@ export type AuctionParticipant = {
     name: string;
     is_agent: boolean;
     call_order: number;
+    claimed_by: string | null;
+    claimed_by_user_id: number | null;
     budget_remaining: number;
     slots: RosterSlot[];
     roster: RosterEntry[];
+};
+
+export type AuctionViewer = {
+    auction_participant_id: number | null;
+};
+
+export type AuctionPermissions = {
+    manage: boolean;
+    act: boolean;
 };
 
 export type AuctionCall = {
@@ -58,6 +69,7 @@ export type AuctionCall = {
 
 export type Auction = {
     id: number;
+    user_id: number | null;
     name: string;
     status: AuctionStatus;
     budget_per_participant: number;

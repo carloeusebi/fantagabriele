@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -41,6 +42,14 @@ class AuctionParticipant extends Model
     public function calls(): HasMany
     {
         return $this->hasMany(AuctionCall::class, 'called_by_auction_participant_id');
+    }
+
+    /**
+     * @return HasOne<AuctionViewer, $this>
+     */
+    public function viewer(): HasOne
+    {
+        return $this->hasOne(AuctionViewer::class);
     }
 
     public function budgetRemaining(): int
@@ -81,6 +90,8 @@ class AuctionParticipant extends Model
             'name' => $this->name,
             'is_agent' => $this->is_agent,
             'call_order' => $this->call_order,
+            'claimed_by' => $this->viewer?->user?->name,
+            'claimed_by_user_id' => $this->viewer?->user_id,
             'budget_remaining' => $this->budgetRemaining(),
             'slots' => collect(PlayerRole::cases())->map(fn (PlayerRole $role) => [
                 'role' => $role->value,

@@ -9,6 +9,7 @@ use App\Events\Auction\AssignmentCorrected;
 use App\Events\Auction\AssignmentReverted;
 use App\Events\Auction\AuctionOrderUpdated;
 use App\Events\Auction\AuctionStatusChanged;
+use App\Events\Auction\AuctionViewerJoined;
 use App\Events\Auction\PlayerAssigned;
 use App\Events\Auction\PlayerCalled;
 use App\Events\Auction\PlayerUnsold;
@@ -16,8 +17,10 @@ use App\Exceptions\Auction\AuctionRuleException;
 use App\Models\Auction;
 use App\Models\AuctionCall;
 use App\Models\AuctionParticipant;
+use App\Models\AuctionViewer;
 use App\Models\Player;
 use App\Models\PlayerAssignment;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class AuctionEngine
@@ -91,6 +94,42 @@ class AuctionEngine
         });
 
         AuctionStatusChanged::dispatch($auction);
+    }
+
+    /**
+     * Choose (or change) how a user is viewing this auction: as a
+     * spectator (null participant) or as one of the participants. A
+     * participant may only be claimed by one user at a time.
+     */
+    public function joinAuction(Auction $auction, User $user, ?AuctionParticipant $participant): AuctionViewer
+    {
+        $viewer = DB::transaction(function () use ($auction, $user, $participant) {
+            $auction = $this->lock($auction);
+
+            if ($participant !== null) {
+                if ($participant->auction_id !== $auction->id) {
+                    throw AuctionRuleException::because('Il partecipante non appartiene a questa asta.');
+                }
+
+                $alreadyClaimed = AuctionViewer::query()
+                    ->where('auction_participant_id', $participant->id)
+                    ->where('user_id', '!=', $user->id)
+                    ->exists();
+
+                if ($alreadyClaimed) {
+                    throw AuctionRuleException::because("{$participant->name} è già stato scelto da un altro utente.");
+                }
+            }
+
+            return AuctionViewer::query()->updateOrCreate(
+                ['auction_id' => $auction->id, 'user_id' => $user->id],
+                ['auction_participant_id' => $participant?->id],
+            );
+        });
+
+        AuctionViewerJoined::dispatch($auction, $viewer);
+
+        return $viewer;
     }
 
     /**

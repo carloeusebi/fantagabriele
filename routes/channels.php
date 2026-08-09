@@ -11,3 +11,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('auction.{auction}', function (User $user, Auction $auction) {
     return true;
 });
+
+Broadcast::channel('auction-presence.{auction}', function (User $user, Auction $auction) {
+    return ['id' => $user->id, 'name' => $user->name];
+});

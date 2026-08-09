@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
+ * @property int|null $user_id
  * @property string $name
  * @property AuctionStatus $status
  * @property int $budget_per_participant
@@ -23,12 +24,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $current_call_id
  */
 #[Fillable([
-    'name', 'status', 'budget_per_participant',
+    'user_id', 'name', 'status', 'budget_per_participant',
     'slots_goalkeeper', 'slots_defender', 'slots_midfielder', 'slots_forward',
     'current_phase', 'current_turn_auction_participant_id', 'current_call_id',
 ])]
 class Auction extends Model
 {
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
      * @return HasMany<AuctionParticipant, $this>
      */
@@ -51,6 +60,19 @@ class Auction extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(PlayerAssignment::class);
+    }
+
+    /**
+     * @return HasMany<AuctionViewer, $this>
+     */
+    public function viewers(): HasMany
+    {
+        return $this->hasMany(AuctionViewer::class);
+    }
+
+    public function viewerFor(User $user): ?AuctionViewer
+    {
+        return $this->viewers->firstWhere('user_id', $user->id);
     }
 
     /**

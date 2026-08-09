@@ -1,21 +1,36 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { AssignmentHistory } from '@/components/auctions/assignment-history';
 import { CallOrderEditor } from '@/components/auctions/call-order-editor';
 import { CurrentCallPanel } from '@/components/auctions/current-call-panel';
 import { ParticipantBoard } from '@/components/auctions/participant-board';
+import { RoleChooser } from '@/components/auctions/role-chooser';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useAuctionChannel } from '@/hooks/use-auction-channel';
+import { useAuctionPresence } from '@/hooks/use-auction-presence';
 import auctions from '@/routes/auctions';
 import auctionParticipants from '@/routes/auctions/participants';
 import auctionStatus from '@/routes/auctions/status';
+import type { Auth } from '@/types';
 import type {
     Auction,
     AuctionParticipant,
+    AuctionPermissions,
+    AuctionViewer,
     Player,
     PlayerAssignment,
     RoleOption,
@@ -28,20 +43,32 @@ const statusLabels: Record<Auction['status'], string> = {
     completed: 'Conclusa',
 };
 
+type PageProps = {
+    auth: Auth;
+};
+
 export default function AuctionsShow({
     auction,
     participants,
     availablePlayers,
     assignments,
+    viewer,
+    permissions,
     roles,
 }: {
     auction: Auction;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
     assignments: PlayerAssignment[];
+    viewer: AuctionViewer | null;
+    permissions: AuctionPermissions;
     roles: RoleOption[];
 }) {
     useAuctionChannel(auction.id);
+    const online = useAuctionPresence(auction.id);
+
+    const { auth } = usePage<PageProps>().props;
+    const isOwner = auction.user_id === auth.user.id;
 
     const currentPhaseLabel = roles.find(
         (role) => role.value === auction.current_phase,
@@ -67,46 +94,160 @@ export default function AuctionsShow({
                         <Badge variant="outline">
                             {statusLabels[auction.status]}
                         </Badge>
-                        <StatusControls auction={auction} />
+                        {isOwner && (
+                            <>
+                                <StatusControls auction={auction} />
+                                <DeleteAuctionDialog auction={auction} />
+                            </>
+                        )}
                     </div>
                 </div>
 
-                {auction.status === 'setup' && (
-                    <SetupPanel auction={auction} participants={participants} />
-                )}
-
-                {auction.status !== 'setup' && (
+                {viewer === null ? (
+                    <JoinAuctionGate
+                        auctionId={auction.id}
+                        participants={participants}
+                    />
+                ) : (
                     <>
-                        <CurrentCallPanel
-                            auction={auction}
+                        <ViewerIndicator
+                            auctionId={auction.id}
                             participants={participants}
-                            availablePlayers={availablePlayers}
+                            viewer={viewer}
+                            online={online}
                         />
 
-                        <ParticipantBoard
-                            participants={participants}
-                            currentTurnParticipantId={
-                                auction.current_turn_auction_participant_id
-                            }
-                        />
-
-                        <div>
-                            <Heading
-                                variant="small"
-                                title="Storico assegnazioni"
-                            />
-                            <div className="mt-3">
-                                <AssignmentHistory
-                                    auctionId={auction.id}
-                                    assignments={assignments}
+                        {auction.status === 'setup' &&
+                            (permissions.manage ? (
+                                <SetupPanel
+                                    auction={auction}
                                     participants={participants}
                                 />
-                            </div>
-                        </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    In attesa che l'organizzatore configuri
+                                    l'asta.
+                                </p>
+                            ))}
+
+                        {auction.status !== 'setup' && (
+                            <>
+                                <CurrentCallPanel
+                                    auction={auction}
+                                    participants={participants}
+                                    availablePlayers={availablePlayers}
+                                    canAct={permissions.act}
+                                />
+
+                                <ParticipantBoard
+                                    participants={participants}
+                                    currentTurnParticipantId={
+                                        auction.current_turn_auction_participant_id
+                                    }
+                                    onlineUserIds={online.map((u) => u.id)}
+                                />
+
+                                <div>
+                                    <Heading
+                                        variant="small"
+                                        title="Storico assegnazioni"
+                                    />
+                                    <div className="mt-3">
+                                        <AssignmentHistory
+                                            auctionId={auction.id}
+                                            assignments={assignments}
+                                            participants={participants}
+                                            canAct={permissions.act}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </>
                 )}
             </div>
         </>
+    );
+}
+
+function JoinAuctionGate({
+    auctionId,
+    participants,
+}: {
+    auctionId: number;
+    participants: AuctionParticipant[];
+}) {
+    return (
+        <Card className="max-w-md">
+            <CardHeader>
+                <CardTitle>Come vuoi partecipare?</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <RoleChooser
+                    auctionId={auctionId}
+                    participants={participants}
+                    currentParticipantId={null}
+                />
+            </CardContent>
+        </Card>
+    );
+}
+
+function ViewerIndicator({
+    auctionId,
+    participants,
+    viewer,
+    online,
+}: {
+    auctionId: number;
+    participants: AuctionParticipant[];
+    viewer: AuctionViewer;
+    online: { id: number; name: string }[];
+}) {
+    const participant = participants.find(
+        (p) => p.id === viewer.auction_participant_id,
+    );
+
+    return (
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+                <span>
+                    {participant
+                        ? `Tu sei: ${participant.name}`
+                        : 'Stai guardando come spettatore'}
+                </span>
+
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon">
+                            <Pencil />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogTitle>Cambia il tuo ruolo</DialogTitle>
+                        <RoleChooser
+                            auctionId={auctionId}
+                            participants={participants}
+                            currentParticipantId={viewer.auction_participant_id}
+                        />
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            {online.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3">
+                    {online.map((user) => (
+                        <span
+                            key={user.id}
+                            className="flex items-center gap-1.5"
+                        >
+                            <span className="size-2 shrink-0 rounded-full bg-green-500" />
+                            {user.name}
+                        </span>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -132,6 +273,43 @@ function StatusControls({ auction }: { auction: Auction }) {
     }
 
     return null;
+}
+
+function DeleteAuctionDialog({ auction }: { auction: Auction }) {
+    function destroy() {
+        router.delete(auctions.destroy(auction.id).url);
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button type="button" variant="ghost" size="icon">
+                    <Trash2 />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogTitle>Eliminare "{auction.name}"?</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                    Verranno eliminati anche partecipanti, chiamate e
+                    assegnazioni di questa asta. L'operazione non è reversibile.
+                </p>
+                <DialogFooter className="gap-2">
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">
+                            Annulla
+                        </Button>
+                    </DialogClose>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={destroy}
+                    >
+                        Elimina
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function SetupPanel({
