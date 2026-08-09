@@ -51,6 +51,7 @@ export default function AuctionsShow({
     auction,
     participants,
     availablePlayers,
+    unassignedPlayers,
     assignments,
     viewer,
     permissions,
@@ -59,6 +60,7 @@ export default function AuctionsShow({
     auction: Auction;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
+    unassignedPlayers: Player[];
     assignments: PlayerAssignment[];
     viewer: AuctionViewer | null;
     permissions: AuctionPermissions;
@@ -158,6 +160,9 @@ export default function AuctionsShow({
                                             auctionId={auction.id}
                                             assignments={assignments}
                                             participants={participants}
+                                            unassignedPlayers={
+                                                unassignedPlayers
+                                            }
                                             canResolve={permissions.resolveCall}
                                         />
                                     </div>

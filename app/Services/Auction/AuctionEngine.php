@@ -5,6 +5,7 @@ namespace App\Services\Auction;
 use App\Enums\AuctionCallStatus;
 use App\Enums\AuctionStatus;
 use App\Enums\PlayerRole;
+use App\Events\Auction\AssignmentAdded;
 use App\Events\Auction\AssignmentCorrected;
 use App\Events\Auction\AssignmentReverted;
 use App\Events\Auction\AuctionOrderUpdated;
@@ -342,6 +343,43 @@ class AuctionEngine
         AssignmentCorrected::dispatch($auction, $newAssignment);
 
         return $newAssignment;
+    }
+
+    /**
+     * Manually record an assignment for a player who never went through a
+     * call. This exists to rectify mistaken transactions (e.g. the wrong
+     * player was recorded and the actual one was never assigned): any
+     * player may be added to any participant regardless of the auction's
+     * current phase, and — like correct()/revert() — it never touches the
+     * current phase/turn/call state.
+     */
+    public function addAssignment(Auction $auction, Player $player, AuctionParticipant $participant, int $price): PlayerAssignment
+    {
+        $assignment = DB::transaction(function () use ($auction, $player, $participant, $price) {
+            $auction = $this->lock($auction);
+
+            $alreadyAssigned = PlayerAssignment::query()
+                ->where('auction_id', $auction->id)
+                ->where('player_id', $player->id)
+                ->exists();
+
+            if ($alreadyAssigned) {
+                throw AuctionRuleException::because("{$player->name} è già stato assegnato in questa asta.");
+            }
+
+            $this->assertCanAfford($auction, $participant, $player, $price);
+
+            return PlayerAssignment::query()->create([
+                'auction_id' => $auction->id,
+                'auction_participant_id' => $participant->id,
+                'player_id' => $player->id,
+                'price' => $price,
+            ]);
+        });
+
+        AssignmentAdded::dispatch($auction, $assignment);
+
+        return $assignment;
     }
 
     private function assertInSetup(Auction $auction): void

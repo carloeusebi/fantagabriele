@@ -15,6 +15,7 @@ const AUCTION_EVENTS = [
     '.PlayerUnsold',
     '.AssignmentReverted',
     '.AssignmentCorrected',
+    '.AssignmentAdded',
 ];
 
 export function useAuctionChannel(auctionId: number) {
@@ -31,6 +32,7 @@ export function useAuctionChannel(auctionId: number) {
                     'auction',
                     'participants',
                     'availablePlayers',
+                    'unassignedPlayers',
                     'assignments',
                 ],
             });
