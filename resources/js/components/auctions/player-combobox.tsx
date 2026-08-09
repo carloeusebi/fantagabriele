@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
+import { RoleLetter } from '@/components/auctions/role-letter';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -8,12 +9,14 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
+    CommandSeparator,
 } from '@/components/ui/command';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { ROLE_ORDER } from '@/lib/role-colors';
 import { cn } from '@/lib/utils';
 import type { Player } from '@/types/auction';
 
@@ -30,6 +33,11 @@ export function PlayerCombobox({
 }) {
     const [open, setOpen] = useState(false);
     const selected = players.find((player) => String(player.id) === value);
+
+    const groups = ROLE_ORDER.map((role) => ({
+        role,
+        players: players.filter((player) => player.role === role),
+    })).filter((group) => group.players.length > 0);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -54,40 +62,46 @@ export function PlayerCombobox({
                     <CommandInput placeholder={placeholder} />
                     <CommandList>
                         <CommandEmpty>Nessun giocatore trovato.</CommandEmpty>
-                        <CommandGroup>
-                            {players.map((player) => (
-                                <CommandItem
-                                    key={player.id}
-                                    value={String(player.id)}
-                                    keywords={[
-                                        player.name,
-                                        player.team?.name ?? '',
-                                    ]}
-                                    onSelect={(currentValue) => {
-                                        onChange(
-                                            currentValue === value
-                                                ? ''
-                                                : currentValue,
-                                        );
-                                        setOpen(false);
-                                    }}
-                                >
-                                    <Check
-                                        className={cn(
-                                            value === String(player.id)
-                                                ? 'opacity-100'
-                                                : 'opacity-0',
-                                        )}
-                                    />
-                                    {player.name}
-                                    {player.team
-                                        ? ` (${player.team.name})`
-                                        : ''}
-                                    {' — FVM '}
-                                    {player.fvm ?? '—'}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
+                        {groups.map((group, index) => (
+                            <Fragment key={group.role}>
+                                {index > 0 && <CommandSeparator />}
+                                <CommandGroup>
+                                    {group.players.map((player) => (
+                                        <CommandItem
+                                            key={player.id}
+                                            value={String(player.id)}
+                                            keywords={[
+                                                player.name,
+                                                player.team?.name ?? '',
+                                            ]}
+                                            onSelect={(currentValue) => {
+                                                onChange(
+                                                    currentValue === value
+                                                        ? ''
+                                                        : currentValue,
+                                                );
+                                                setOpen(false);
+                                            }}
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    value === String(player.id)
+                                                        ? 'opacity-100'
+                                                        : 'opacity-0',
+                                                )}
+                                            />
+                                            <RoleLetter role={player.role} />
+                                            {player.name}
+                                            {player.team
+                                                ? ` (${player.team.name})`
+                                                : ''}
+                                            {' — FVM '}
+                                            {player.fvm ?? '—'}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </Fragment>
+                        ))}
                     </CommandList>
                 </Command>
             </PopoverContent>

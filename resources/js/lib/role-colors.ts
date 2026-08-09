@@ -6,3 +6,12 @@ export const roleBadgeClasses: Record<PlayerRoleValue, string> = {
     C: 'border-role-midfielder/30 bg-role-midfielder/15 text-role-midfielder',
     A: 'border-role-forward/30 bg-role-forward/15 text-role-forward',
 };
+
+export const roleLetterClasses: Record<PlayerRoleValue, string> = {
+    P: 'bg-role-goalkeeper',
+    D: 'bg-role-defender',
+    C: 'bg-role-midfielder',
+    A: 'bg-role-forward',
+};
+
+export const ROLE_ORDER: PlayerRoleValue[] = ['P', 'D', 'C', 'A'];
