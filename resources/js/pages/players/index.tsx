@@ -1,7 +1,6 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import PlayerController from '@/actions/App/Http/Controllers/PlayerController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -30,8 +29,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { index as playersIndex } from '@/routes/players';
+import { roleBadgeClasses } from '@/lib/role-colors';
 import type { Auth } from '@/types';
+import type { PlayerRoleValue } from '@/types/auction';
+import PlayerController from '@/actions/App/Http/Controllers/PlayerController';
+import { index as playersIndex } from '@/routes/players';
 
 type Team = {
     id: number;
@@ -42,7 +44,7 @@ type Player = {
     id: number;
     fanta_id: number;
     name: string;
-    role: 'P' | 'D' | 'C' | 'A';
+    role: PlayerRoleValue;
     role_mantra: string | null;
     team: Team | null;
     initial_quotation: number;
@@ -299,7 +301,14 @@ export default function PlayersIndex({ players }: { players: Player[] }) {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">
+                                            <Badge
+                                                variant="outline"
+                                                className={
+                                                    roleBadgeClasses[
+                                                        player.role
+                                                    ]
+                                                }
+                                            >
                                                 {roleLabels[player.role]}
                                             </Badge>
                                         </TableCell>

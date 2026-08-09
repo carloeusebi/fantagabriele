@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { roleBadgeClasses } from '@/lib/role-colors';
 import { cn } from '@/lib/utils';
 import type { AuctionParticipant } from '@/types/auction';
 
@@ -47,7 +48,11 @@ export function ParticipantBoard({
                     <CardContent className="space-y-3">
                         <div className="flex flex-wrap gap-2">
                             {participant.slots.map((slot) => (
-                                <Badge key={slot.role} variant="secondary">
+                                <Badge
+                                    key={slot.role}
+                                    variant="outline"
+                                    className={roleBadgeClasses[slot.role]}
+                                >
                                     {slot.label}: {slot.filled}/{slot.total}
                                 </Badge>
                             ))}
