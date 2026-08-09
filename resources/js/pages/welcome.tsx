@@ -167,12 +167,6 @@ export default function Welcome() {
                                     />
                                 </div>
                             </div>
-                            <p className="mt-3 text-center font-mono text-xs text-muted-foreground">
-                                ~/fantagabrieleeee/logo.png{' '}
-                                <span className="animate-pulse motion-reduce:animate-none">
-                                    ▍
-                                </span>
-                            </p>
                         </div>
                     </section>
 
