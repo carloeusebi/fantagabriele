@@ -2,14 +2,19 @@ import { router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import { toast } from 'sonner';
 
+// useEcho (unlike useEchoModel) does NOT auto-prefix event names with a dot,
+// so it must be done here — otherwise Echo prepends its default namespace
+// ("App.Events.") and the listener never matches the bare event names our
+// broadcastAs() methods send over the wire.
 const AUCTION_EVENTS = [
-    'AuctionStatusChanged',
-    'AuctionOrderUpdated',
-    'PlayerCalled',
-    'PlayerAssigned',
-    'PlayerUnsold',
-    'AssignmentReverted',
-    'AssignmentCorrected',
+    '.AuctionStatusChanged',
+    '.AuctionOrderUpdated',
+    '.AuctionViewerJoined',
+    '.PlayerCalled',
+    '.PlayerAssigned',
+    '.PlayerUnsold',
+    '.AssignmentReverted',
+    '.AssignmentCorrected',
 ];
 
 export function useAuctionChannel(auctionId: number) {
@@ -22,7 +27,12 @@ export function useAuctionChannel(auctionId: number) {
             }
 
             router.reload({
-                only: ['auction', 'participants', 'availablePlayers', 'assignments'],
+                only: [
+                    'auction',
+                    'participants',
+                    'availablePlayers',
+                    'assignments',
+                ],
             });
         },
         [auctionId],
