@@ -342,16 +342,16 @@
         },
         {
             "name": "cocosport/rybbit-sdk-for-laravel",
-            "version": "v0.2.2",
+            "version": "v0.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel.git",
-                "reference": "3655f04e910dd69b571967569f7fba89d33dc508"
+                "reference": "9c2f7934815dd40a12d922e3b0b75ee5e668aa50"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Cocosport/Rybbit-Sdk-for-Laravel/zipball/3655f04e910dd69b571967569f7fba89d33dc508",
-                "reference": "3655f04e910dd69b571967569f7fba89d33dc508",
+                "url": "https://api.github.com/repos/Cocosport/Rybbit-Sdk-for-Laravel/zipball/9c2f7934815dd40a12d922e3b0b75ee5e668aa50",
+                "reference": "9c2f7934815dd40a12d922e3b0b75ee5e668aa50",
                 "shasum": ""
             },
             "require": {
@@ -404,7 +404,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel/issues",
-                "source": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel/tree/v0.2.2"
+                "source": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel/tree/v0.2.3"
             },
             "funding": [
                 {
@@ -412,7 +412,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-07T21:41:58+00:00"
+            "time": "2026-08-09T12:11:47+00:00"
         },
         {
             "name": "composer/pcre",
