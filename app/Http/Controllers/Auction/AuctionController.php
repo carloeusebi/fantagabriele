@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auction;
 
 use App\Enums\PlayerRole;
+use App\Events\Auction\AuctionCreated;
+use App\Events\Auction\AuctionDeleted;
 use App\Exceptions\Auction\AuctionRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auction\JoinAuctionRequest;
@@ -28,7 +30,7 @@ class AuctionController extends Controller
     public function index(): Response
     {
         return Inertia::render('auctions/index', [
-            'auctions' => Auction::query()->withCount('participants')->latest()->get(),
+            'auctions' => Auction::query()->withCount('participants')->with('user')->latest()->get(),
         ]);
     }
 
@@ -58,6 +60,8 @@ class AuctionController extends Controller
 
             return $auction;
         });
+
+        AuctionCreated::dispatch($auction);
 
         return to_route('auctions.show', $auction);
     }
@@ -175,6 +179,8 @@ class AuctionController extends Controller
         Gate::authorize('delete', $auction);
 
         $auction->delete();
+
+        AuctionDeleted::dispatch($auction);
 
         return to_route('auctions.index');
     }

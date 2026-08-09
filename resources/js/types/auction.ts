@@ -73,6 +73,7 @@ export type AuctionCall = {
 export type Auction = {
     id: number;
     user_id: number | null;
+    user?: { id: number; name: string } | null;
     name: string;
     status: AuctionStatus;
     budget_per_participant: number;
