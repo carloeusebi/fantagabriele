@@ -15,6 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('auctions/{auction}/status', [AuctionController::class, 'updateStatus'])->name('auctions.status.update');
     Route::delete('auctions/{auction}', [AuctionController::class, 'destroy'])->name('auctions.destroy');
     Route::post('auctions/{auction}/join', [AuctionController::class, 'join'])->name('auctions.join');
+    Route::post('auctions/{auction}/unlock', [AuctionController::class, 'unlock'])->name('auctions.unlock');
 
     Route::post('auctions/{auction}/participants', [AuctionParticipantController::class, 'store'])->name('auctions.participants.store');
     Route::patch('auctions/{auction}/participants/{participant}', [AuctionParticipantController::class, 'update'])->name('auctions.participants.update');
@@ -28,6 +29,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('auctions/{auction}/assignments/{assignment}', [AuctionAssignmentController::class, 'update'])->name('auctions.assignments.update');
     Route::delete('auctions/{auction}/assignments/{assignment}', [AuctionAssignmentController::class, 'destroy'])->name('auctions.assignments.destroy');
 
-    Route::post('auctions/{auction}/advisor/call', [AuctionAdvisorController::class, 'suggestCall'])->name('auctions.advisor.call');
-    Route::post('auctions/{auction}/advisor/bid', [AuctionAdvisorController::class, 'suggestMaxBid'])->name('auctions.advisor.bid');
+    Route::get('auctions/{auction}/advisor/call', [AuctionAdvisorController::class, 'suggestCall'])->name('auctions.advisor.call');
+    Route::get('auctions/{auction}/advisor/bid', [AuctionAdvisorController::class, 'suggestMaxBid'])->name('auctions.advisor.bid');
 });

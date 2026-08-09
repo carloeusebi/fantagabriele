@@ -15,7 +15,7 @@ use App\Models\Player;
  */
 class AuctionContextBuilder
 {
-    public function forCall(Auction $auction): CallSuggestionContext
+    public function forCall(Auction $auction, AuctionParticipant $controlledParticipant): CallSuggestionContext
     {
         $role = $auction->current_phase;
 
@@ -23,8 +23,10 @@ class AuctionContextBuilder
             throw AuctionRuleException::because('Nessuna fase attiva.');
         }
 
-        $agent = $auction->participants()->where('is_agent', true)->firstOrFail();
-        $others = $auction->participants()->where('is_agent', false)->orderBy('call_order')->get();
+        $others = $auction->participants()
+            ->whereKeyNot($controlledParticipant->id)
+            ->orderBy('call_order')
+            ->get();
 
         $availablePlayers = Player::query()
             ->where('role', $role)
@@ -39,18 +41,16 @@ class AuctionContextBuilder
         return new CallSuggestionContext(
             role: $role->value,
             roleLabel: $role->label(),
-            controlledParticipant: $agent->toBoardArray(),
+            controlledParticipant: $controlledParticipant->toBoardArray(),
             otherParticipants: $others->map->toBoardArray()->values()->all(),
             availablePlayers: $availablePlayers,
         );
     }
 
-    public function forBid(Auction $auction, Player $player): BidSuggestionContext
+    public function forBid(Auction $auction, Player $player, AuctionParticipant $controlledParticipant): BidSuggestionContext
     {
-        $agent = $auction->participants()->where('is_agent', true)->firstOrFail();
-
         $competitorsNeedingRole = $auction->participants()
-            ->where('is_agent', false)
+            ->whereKeyNot($controlledParticipant->id)
             ->get()
             ->filter(fn (AuctionParticipant $participant) => ! $participant->hasCompletedRole($player->role))
             ->count();
@@ -62,7 +62,7 @@ class AuctionContextBuilder
 
         return new BidSuggestionContext(
             player: $this->playerSummary($player),
-            controlledParticipant: $agent->toBoardArray(),
+            controlledParticipant: $controlledParticipant->toBoardArray(),
             competitorsNeedingRole: $competitorsNeedingRole,
             remainingPoolSize: $remainingPoolSize,
         );

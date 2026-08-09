@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\AuctionStatus;
 use App\Enums\PlayerRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int|null $user_id
  * @property string $name
+ * @property string|null $password
  * @property AuctionStatus $status
  * @property int $budget_per_participant
  * @property int $slots_goalkeeper
@@ -24,12 +27,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $current_call_id
  */
 #[Fillable([
-    'user_id', 'name', 'status', 'budget_per_participant',
+    'user_id', 'name', 'password', 'status', 'budget_per_participant',
     'slots_goalkeeper', 'slots_defender', 'slots_midfielder', 'slots_forward',
     'current_phase', 'current_turn_auction_participant_id', 'current_call_id',
 ])]
+#[Hidden(['password'])]
 class Auction extends Model
 {
+    /** @use HasFactory<\Database\Factories\AuctionFactory> */
+    use HasFactory;
+
     /**
      * @return BelongsTo<User, $this>
      */
@@ -101,6 +108,11 @@ class Auction extends Model
         };
     }
 
+    public function hasPassword(): bool
+    {
+        return $this->password !== null;
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -109,6 +121,7 @@ class Auction extends Model
     protected function casts(): array
     {
         return [
+            'password' => 'hashed',
             'status' => AuctionStatus::class,
             'current_phase' => PlayerRole::class,
         ];

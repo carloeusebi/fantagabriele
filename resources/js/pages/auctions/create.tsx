@@ -16,6 +16,7 @@ type ParticipantInput = {
 export default function AuctionsCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
+        password: '',
         budget_per_participant: 500,
         slots_goalkeeper: 3,
         slots_defender: 8,
@@ -78,6 +79,23 @@ export default function AuctionsCreate() {
                             required
                         />
                         <InputError message={errors.name} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="password">
+                            Password (opzionale)
+                        </Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            autoComplete="new-password"
+                            value={data.password}
+                            onChange={(e) =>
+                                setData('password', e.target.value)
+                            }
+                            placeholder="Lascia vuoto per non proteggere l'asta"
+                        />
+                        <InputError message={errors.password} />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auction;
 
 use App\Enums\PlayerRole;
+use App\Exceptions\Auction\AuctionRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auction\JoinAuctionRequest;
 use App\Http\Requests\Auction\StoreAuctionRequest;
+use App\Http\Requests\Auction\UnlockAuctionRequest;
 use App\Http\Requests\Auction\UpdateAuctionStatusRequest;
 use App\Models\Auction;
 use App\Models\AuctionParticipant;
@@ -16,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 use LogicException;
@@ -39,7 +42,7 @@ class AuctionController extends Controller
         $auction = DB::transaction(function () use ($request) {
             $auction = Auction::query()->create([
                 ...$request->safe()->only([
-                    'name', 'budget_per_participant',
+                    'name', 'password', 'budget_per_participant',
                     'slots_goalkeeper', 'slots_defender', 'slots_midfielder', 'slots_forward',
                 ]),
                 'user_id' => $request->user()->id,
@@ -61,6 +64,16 @@ class AuctionController extends Controller
 
     public function show(Request $request, Auction $auction): Response
     {
+        if ($this->isLocked($request, $auction)) {
+            return Inertia::render('auctions/show', [
+                'locked' => true,
+                'auction' => [
+                    'id' => $auction->id,
+                    'name' => $auction->name,
+                ],
+            ]);
+        }
+
         $auction->load(['currentTurnParticipant', 'currentCall.player.team', 'currentCall.calledBy']);
 
         $participants = $auction->participants()->orderBy('call_order')->with('viewer.user')->get()->map->toBoardArray()->values();
@@ -87,6 +100,7 @@ class AuctionController extends Controller
             : null;
 
         return Inertia::render('auctions/show', [
+            'locked' => false,
             'auction' => $auction,
             'participants' => $participants,
             'availablePlayers' => $availablePlayers,
@@ -107,6 +121,17 @@ class AuctionController extends Controller
                 'label' => $role->label(),
             ])->values(),
         ]);
+    }
+
+    public function unlock(UnlockAuctionRequest $request, Auction $auction): RedirectResponse
+    {
+        if (! $auction->hasPassword() || ! Hash::check($request->validated('password'), $auction->password)) {
+            throw AuctionRuleException::because('Password errata.');
+        }
+
+        $request->session()->put($this->unlockSessionKey($auction), true);
+
+        return to_route('auctions.show', $auction);
     }
 
     public function join(JoinAuctionRequest $request, Auction $auction, AuctionEngine $engine): RedirectResponse
@@ -141,5 +166,27 @@ class AuctionController extends Controller
         $auction->delete();
 
         return to_route('auctions.index');
+    }
+
+    /**
+     * A password-protected auction is locked for anyone but its owner and
+     * admins until they unlock it for the current session.
+     */
+    private function isLocked(Request $request, Auction $auction): bool
+    {
+        if (! $auction->hasPassword()) {
+            return false;
+        }
+
+        if ($request->user()->isAdmin() || $request->user()->id === $auction->user_id) {
+            return false;
+        }
+
+        return ! $request->session()->get($this->unlockSessionKey($auction), false);
+    }
+
+    private function unlockSessionKey(Auction $auction): string
+    {
+        return "auctions.{$auction->id}.unlocked";
     }
 }

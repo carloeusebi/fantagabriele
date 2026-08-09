@@ -1,6 +1,6 @@
-import { router, useHttp } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { PlayerCombobox } from '@/components/auctions/player-combobox';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useAdvisorStream } from '@/hooks/use-advisor-stream';
 import { hasCompletedRole } from '@/lib/auction';
 import auctionAdvisor from '@/routes/auctions/advisor';
 import auctionAssignments from '@/routes/auctions/assignments';
@@ -23,6 +24,34 @@ import type { Auction, AuctionParticipant, Player, PlayerRoleValue } from '@/typ
 
 type CallAdvice = { player_id: number; reasoning: string };
 type BidAdvice = { max_price: number; reasoning: string };
+
+function AdvisorReasoning({
+    reasoning,
+    streaming,
+    error,
+}: {
+    reasoning: string;
+    streaming: boolean;
+    error: string | null;
+}) {
+    if (error) {
+        return <p className="text-sm text-destructive">{error}</p>;
+    }
+
+    if (streaming && !reasoning) {
+        return (
+            <p className="text-sm text-muted-foreground italic">
+                L'IA sta pensando…
+            </p>
+        );
+    }
+
+    if (!reasoning) {
+        return null;
+    }
+
+    return <p className="text-sm text-muted-foreground">{reasoning}</p>;
+}
 
 export function CurrentCallPanel({
     auction,
@@ -40,7 +69,6 @@ export function CurrentCallPanel({
     canAdvise: boolean;
 }) {
     const call = auction.current_call;
-    const agentParticipant = participants.find((p) => p.is_agent) ?? null;
 
     if (call) {
         return (
@@ -49,7 +77,7 @@ export function CurrentCallPanel({
                 call={call}
                 participants={participants}
                 currentPhase={auction.current_phase}
-                canAskForBidAdvice={agentParticipant !== null && canAdvise}
+                canAskForBidAdvice={canAdvise}
                 canResolve={canResolve}
             />
         );
@@ -66,7 +94,7 @@ export function CurrentCallPanel({
             participants={participants}
             currentPhase={auction.current_phase}
             availablePlayers={availablePlayers}
-            canAskForCallAdvice={agentParticipant !== null && canAdvise}
+            canAskForCallAdvice={canAdvise}
             canCall={canCall}
         />
     );
@@ -93,14 +121,17 @@ function OpenCallForm({
     const [callerId, setCallerId] = useState<string>(
         defaultCallerId ? String(defaultCallerId) : '',
     );
-    const [advice, setAdvice] = useState<CallAdvice | null>(null);
-    const advisor = useHttp<Record<string, never>, CallAdvice>({});
+    const advisor = useAdvisorStream<CallAdvice>();
 
-    async function askForAdvice() {
-        const result = await advisor.post(auctionAdvisor.call(auctionId).url);
-        setAdvice(result);
-        setPlayerId(String(result.player_id));
+    function askForAdvice() {
+        advisor.start(auctionAdvisor.call(auctionId).url);
     }
+
+    useEffect(() => {
+        if (advisor.result) {
+            setPlayerId(String(advisor.result.player_id));
+        }
+    }, [advisor.result]);
 
     function submit(event: FormEvent) {
         event.preventDefault();
@@ -131,18 +162,18 @@ function OpenCallForm({
                             type="button"
                             variant="outline"
                             size="sm"
-                            disabled={advisor.processing}
+                            disabled={advisor.streaming}
                             onClick={askForAdvice}
                         >
                             <Sparkles data-icon="inline-start" />
                             Chiedi consiglio all'IA
                         </Button>
 
-                        {advice && (
-                            <p className="text-sm text-muted-foreground">
-                                {advice.reasoning}
-                            </p>
-                        )}
+                        <AdvisorReasoning
+                            reasoning={advisor.reasoning}
+                            streaming={advisor.streaming}
+                            error={advisor.error}
+                        />
                     </div>
                 )}
 
@@ -217,14 +248,17 @@ function ResolveCallForm({
 }) {
     const [participantId, setParticipantId] = useState('');
     const [price, setPrice] = useState('');
-    const [advice, setAdvice] = useState<BidAdvice | null>(null);
-    const advisor = useHttp<Record<string, never>, BidAdvice>({});
+    const advisor = useAdvisorStream<BidAdvice>();
 
-    async function askForAdvice() {
-        const result = await advisor.post(auctionAdvisor.bid(auctionId).url);
-        setAdvice(result);
-        setPrice(String(result.max_price));
+    function askForAdvice() {
+        advisor.start(auctionAdvisor.bid(auctionId).url);
     }
+
+    useEffect(() => {
+        if (advisor.result) {
+            setPrice(String(advisor.result.max_price));
+        }
+    }, [advisor.result]);
 
     function assign(event: FormEvent) {
         event.preventDefault();
@@ -268,19 +302,25 @@ function ResolveCallForm({
                             type="button"
                             variant="outline"
                             size="sm"
-                            disabled={advisor.processing}
+                            disabled={advisor.streaming}
                             onClick={askForAdvice}
                         >
                             <Sparkles data-icon="inline-start" />
                             Quanto offrire?
                         </Button>
 
-                        {advice && (
-                            <p className="text-sm text-muted-foreground">
-                                Tetto massimo consigliato: {advice.max_price}{' '}
-                                crediti. {advice.reasoning}
+                        {advisor.result && (
+                            <p className="text-sm font-medium">
+                                Tetto massimo consigliato:{' '}
+                                {advisor.result.max_price} crediti
                             </p>
                         )}
+
+                        <AdvisorReasoning
+                            reasoning={advisor.reasoning}
+                            streaming={advisor.streaming}
+                            error={advisor.error}
+                        />
                     </div>
                 )}
 
