@@ -1,8 +1,10 @@
+import { RoleLetter } from '@/components/auctions/role-letter';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { roleBadgeClasses } from '@/lib/role-colors';
+import { Separator } from '@/components/ui/separator';
+import { ROLE_ORDER, roleBadgeClasses } from '@/lib/role-colors';
 import { cn } from '@/lib/utils';
-import type { AuctionParticipant } from '@/types/auction';
+import type { AuctionParticipant, RosterEntry } from '@/types/auction';
 
 export function ParticipantBoard({
     participants,
@@ -59,26 +61,45 @@ export function ParticipantBoard({
                         </div>
 
                         {participant.roster.length > 0 && (
-                            <ul className="space-y-1 text-sm">
-                                {participant.roster.map((entry) => (
-                                    <li
-                                        key={entry.assignment_id}
-                                        className="flex items-center justify-between text-muted-foreground"
-                                    >
-                                        <span>
-                                            {entry.player_name}
-                                            {entry.team
-                                                ? ` (${entry.team})`
-                                                : ''}
-                                        </span>
-                                        <span>{entry.price}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <RosterList roster={participant.roster} />
                         )}
                     </CardContent>
                 </Card>
             ))}
         </div>
+    );
+}
+
+function RosterList({ roster }: { roster: RosterEntry[] }) {
+    const groups = ROLE_ORDER.map((role) => ({
+        role,
+        entries: roster.filter((entry) => entry.role === role),
+    })).filter((group) => group.entries.length > 0);
+
+    return (
+        <ul className="space-y-1 text-sm">
+            {groups.map((group, index) => (
+                <li key={group.role}>
+                    {index > 0 && <Separator className="mb-1" />}
+                    <ul className="space-y-1">
+                        {group.entries.map((entry) => (
+                            <li
+                                key={entry.assignment_id}
+                                className="flex items-center justify-between gap-2 text-muted-foreground"
+                            >
+                                <span className="flex min-w-0 items-center gap-2">
+                                    <RoleLetter role={entry.role} />
+                                    <span className="truncate">
+                                        {entry.player_name}
+                                        {entry.team ? ` (${entry.team})` : ''}
+                                    </span>
+                                </span>
+                                <span className="shrink-0">{entry.price}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </li>
+            ))}
+        </ul>
     );
 }
