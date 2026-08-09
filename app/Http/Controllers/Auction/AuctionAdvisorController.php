@@ -8,11 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Auction;
 use App\Services\Auction\AuctionContextBuilder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class AuctionAdvisorController extends Controller
 {
     public function suggestCall(Auction $auction, AuctionContextBuilder $contextBuilder, AuctionAssistant $assistant): JsonResponse
     {
+        Gate::authorize('advise', $auction);
+
         $suggestion = $assistant->suggestCall($contextBuilder->forCall($auction));
 
         return response()->json([
@@ -23,6 +26,8 @@ class AuctionAdvisorController extends Controller
 
     public function suggestMaxBid(Auction $auction, AuctionContextBuilder $contextBuilder, AuctionAssistant $assistant): JsonResponse
     {
+        Gate::authorize('advise', $auction);
+
         $call = $auction->currentCall;
 
         if (! $call) {

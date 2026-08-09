@@ -94,12 +94,10 @@ export default function AuctionsShow({
                         <Badge variant="outline">
                             {statusLabels[auction.status]}
                         </Badge>
-                        {isOwner && (
-                            <>
-                                <StatusControls auction={auction} />
-                                <DeleteAuctionDialog auction={auction} />
-                            </>
+                        {permissions.updateStatus && (
+                            <StatusControls auction={auction} />
                         )}
+                        {isOwner && <DeleteAuctionDialog auction={auction} />}
                     </div>
                 </div>
 
@@ -136,7 +134,9 @@ export default function AuctionsShow({
                                     auction={auction}
                                     participants={participants}
                                     availablePlayers={availablePlayers}
-                                    canAct={permissions.act}
+                                    canCall={permissions.call}
+                                    canResolve={permissions.resolveCall}
+                                    canAdvise={permissions.advise}
                                 />
 
                                 <ParticipantBoard
@@ -157,7 +157,7 @@ export default function AuctionsShow({
                                             auctionId={auction.id}
                                             assignments={assignments}
                                             participants={participants}
-                                            canAct={permissions.act}
+                                            canResolve={permissions.resolveCall}
                                         />
                                     </div>
                                 </div>

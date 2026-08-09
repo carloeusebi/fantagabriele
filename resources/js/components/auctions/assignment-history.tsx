@@ -36,12 +36,12 @@ export function AssignmentHistory({
     auctionId,
     assignments,
     participants,
-    canAct,
+    canResolve,
 }: {
     auctionId: number;
     assignments: PlayerAssignment[];
     participants: AuctionParticipant[];
-    canAct: boolean;
+    canResolve: boolean;
 }) {
     if (assignments.length === 0) {
         return (
@@ -77,7 +77,7 @@ export function AssignmentHistory({
                             <TableCell>{assignment.participant.name}</TableCell>
                             <TableCell>{assignment.price}</TableCell>
                             <TableCell className="flex justify-end gap-2">
-                                {canAct && (
+                                {canResolve && (
                                     <>
                                         <CorrectAssignmentDialog
                                             auctionId={auctionId}

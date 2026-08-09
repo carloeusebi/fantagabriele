@@ -15,10 +15,10 @@ class AuctionCallController extends Controller
 {
     public function store(StoreCallRequest $request, Auction $auction, AuctionEngine $engine): RedirectResponse
     {
-        Gate::authorize('act', $auction);
-
         $player = Player::query()->findOrFail((int) $request->validated('player_id'));
         $caller = AuctionParticipant::query()->findOrFail((int) $request->validated('called_by_auction_participant_id'));
+
+        Gate::authorize('call', [$auction, $caller]);
 
         $engine->call($auction, $player, $caller);
 
@@ -27,7 +27,7 @@ class AuctionCallController extends Controller
 
     public function destroy(Auction $auction, AuctionEngine $engine): RedirectResponse
     {
-        Gate::authorize('act', $auction);
+        Gate::authorize('resolveCall', $auction);
 
         $engine->cancelCall($auction);
 

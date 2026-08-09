@@ -82,6 +82,10 @@ class AuctionController extends Controller
             ->latest()
             ->get();
 
+        $claimedParticipant = $viewer?->auction_participant_id
+            ? AuctionParticipant::query()->find($viewer->auction_participant_id)
+            : null;
+
         return Inertia::render('auctions/show', [
             'auction' => $auction,
             'participants' => $participants,
@@ -92,7 +96,11 @@ class AuctionController extends Controller
             ] : null,
             'permissions' => [
                 'manage' => Gate::allows('manageParticipants', $auction),
-                'act' => Gate::allows('act', $auction),
+                'updateStatus' => Gate::allows('updateStatus', $auction),
+                'call' => $request->user()->isAdmin()
+                    || ($claimedParticipant !== null && Gate::allows('call', [$auction, $claimedParticipant])),
+                'resolveCall' => Gate::allows('resolveCall', $auction),
+                'advise' => Gate::allows('advise', $auction),
             ],
             'roles' => collect(PlayerRole::cases())->map(fn (PlayerRole $role) => [
                 'value' => $role->value,

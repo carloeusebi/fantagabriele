@@ -55,7 +55,10 @@ export type AuctionViewer = {
 
 export type AuctionPermissions = {
     manage: boolean;
-    act: boolean;
+    updateStatus: boolean;
+    call: boolean;
+    resolveCall: boolean;
+    advise: boolean;
 };
 
 export type AuctionCall = {

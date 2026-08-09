@@ -27,12 +27,16 @@ export function CurrentCallPanel({
     auction,
     participants,
     availablePlayers,
-    canAct,
+    canCall,
+    canResolve,
+    canAdvise,
 }: {
     auction: Auction;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
-    canAct: boolean;
+    canCall: boolean;
+    canResolve: boolean;
+    canAdvise: boolean;
 }) {
     const call = auction.current_call;
     const agentParticipant = participants.find((p) => p.is_agent) ?? null;
@@ -43,8 +47,8 @@ export function CurrentCallPanel({
                 auctionId={auction.id}
                 call={call}
                 participants={participants}
-                canAskForBidAdvice={agentParticipant !== null}
-                canAct={canAct}
+                canAskForBidAdvice={agentParticipant !== null && canAdvise}
+                canResolve={canResolve}
             />
         );
     }
@@ -59,11 +63,8 @@ export function CurrentCallPanel({
             defaultCallerId={auction.current_turn_participant?.id ?? null}
             participants={participants}
             availablePlayers={availablePlayers}
-            canAskForCallAdvice={
-                agentParticipant !== null &&
-                agentParticipant.id === auction.current_turn_participant?.id
-            }
-            canAct={canAct}
+            canAskForCallAdvice={agentParticipant !== null && canAdvise}
+            canCall={canCall}
         />
     );
 }
@@ -74,14 +75,14 @@ function OpenCallForm({
     participants,
     availablePlayers,
     canAskForCallAdvice,
-    canAct,
+    canCall,
 }: {
     auctionId: number;
     defaultCallerId: number | null;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
     canAskForCallAdvice: boolean;
-    canAct: boolean;
+    canCall: boolean;
 }) {
     const [playerId, setPlayerId] = useState<string>('');
     const [callerId, setCallerId] = useState<string>(
@@ -140,7 +141,7 @@ function OpenCallForm({
                     </div>
                 )}
 
-                {canAct ? (
+                {canCall ? (
                     <form
                         onSubmit={submit}
                         className="flex flex-col gap-4 sm:flex-row sm:items-end"
@@ -182,8 +183,7 @@ function OpenCallForm({
                     </form>
                 ) : (
                     <p className="text-sm text-muted-foreground">
-                        Solo l'organizzatore o un partecipante possono chiamare
-                        un giocatore.
+                        Puoi chiamare un giocatore solo durante il tuo turno.
                     </p>
                 )}
             </CardContent>
@@ -196,13 +196,13 @@ function ResolveCallForm({
     call,
     participants,
     canAskForBidAdvice,
-    canAct,
+    canResolve,
 }: {
     auctionId: number;
     call: NonNullable<Auction['current_call']>;
     participants: AuctionParticipant[];
     canAskForBidAdvice: boolean;
-    canAct: boolean;
+    canResolve: boolean;
 }) {
     const [participantId, setParticipantId] = useState('');
     const [price, setPrice] = useState('');
@@ -273,7 +273,7 @@ function ResolveCallForm({
                     </div>
                 )}
 
-                {canAct ? (
+                {canResolve ? (
                     <form
                         onSubmit={assign}
                         className="flex flex-col gap-4 sm:flex-row sm:items-end"
@@ -324,8 +324,7 @@ function ResolveCallForm({
                     </form>
                 ) : (
                     <p className="text-sm text-muted-foreground">
-                        Solo l'organizzatore o un partecipante possono
-                        registrare l'esito.
+                        Solo l'admin può registrare l'esito della chiamata.
                     </p>
                 )}
             </CardContent>
