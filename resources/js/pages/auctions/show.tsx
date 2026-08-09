@@ -144,6 +144,7 @@ export default function AuctionsShow({
                                     currentTurnParticipantId={
                                         auction.current_turn_auction_participant_id
                                     }
+                                    currentPhase={auction.current_phase}
                                     onlineUserIds={online.map((u) => u.id)}
                                 />
 
