@@ -16,10 +16,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useAdvisorStream } from '@/hooks/use-advisor-stream';
+import { hasCompletedRole } from '@/lib/auction';
 import auctionAdvisor from '@/routes/auctions/advisor';
 import auctionAssignments from '@/routes/auctions/assignments';
 import auctionCall from '@/routes/auctions/call';
-import type { Auction, AuctionParticipant, Player } from '@/types/auction';
+import type { Auction, AuctionParticipant, Player, PlayerRoleValue } from '@/types/auction';
 
 type CallAdvice = { player_id: number; reasoning: string };
 type BidAdvice = { max_price: number; reasoning: string };
@@ -75,6 +76,7 @@ export function CurrentCallPanel({
                 auctionId={auction.id}
                 call={call}
                 participants={participants}
+                currentPhase={auction.current_phase}
                 canAskForBidAdvice={canAdvise}
                 canResolve={canResolve}
             />
@@ -90,6 +92,7 @@ export function CurrentCallPanel({
             auctionId={auction.id}
             defaultCallerId={auction.current_turn_participant?.id ?? null}
             participants={participants}
+            currentPhase={auction.current_phase}
             availablePlayers={availablePlayers}
             canAskForCallAdvice={canAdvise}
             canCall={canCall}
@@ -101,6 +104,7 @@ function OpenCallForm({
     auctionId,
     defaultCallerId,
     participants,
+    currentPhase,
     availablePlayers,
     canAskForCallAdvice,
     canCall,
@@ -108,6 +112,7 @@ function OpenCallForm({
     auctionId: number;
     defaultCallerId: number | null;
     participants: AuctionParticipant[];
+    currentPhase: PlayerRoleValue | null;
     availablePlayers: Player[];
     canAskForCallAdvice: boolean;
     canCall: boolean;
@@ -201,6 +206,10 @@ function OpenCallForm({
                                             <SelectItem
                                                 key={participant.id}
                                                 value={String(participant.id)}
+                                                disabled={hasCompletedRole(
+                                                    participant,
+                                                    currentPhase,
+                                                )}
                                             >
                                                 {participant.name}
                                             </SelectItem>
@@ -226,12 +235,14 @@ function ResolveCallForm({
     auctionId,
     call,
     participants,
+    currentPhase,
     canAskForBidAdvice,
     canResolve,
 }: {
     auctionId: number;
     call: NonNullable<Auction['current_call']>;
     participants: AuctionParticipant[];
+    currentPhase: PlayerRoleValue | null;
     canAskForBidAdvice: boolean;
     canResolve: boolean;
 }) {
@@ -333,6 +344,10 @@ function ResolveCallForm({
                                             <SelectItem
                                                 key={participant.id}
                                                 value={String(participant.id)}
+                                                disabled={hasCompletedRole(
+                                                    participant,
+                                                    currentPhase,
+                                                )}
                                             >
                                                 {participant.name}
                                             </SelectItem>
