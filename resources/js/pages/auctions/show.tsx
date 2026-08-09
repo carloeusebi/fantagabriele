@@ -20,6 +20,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuctionChannel } from '@/hooks/use-auction-channel';
 import { useAuctionPresence } from '@/hooks/use-auction-presence';
 import auctions from '@/routes/auctions';
@@ -47,7 +48,91 @@ type PageProps = {
     auth: Auth;
 };
 
-export default function AuctionsShow({
+type LockedAuction = {
+    id: number;
+    name: string;
+};
+
+type AuctionsShowProps =
+    | {
+          locked: true;
+          auction: LockedAuction;
+      }
+    | {
+          locked: false;
+          auction: Auction;
+          participants: AuctionParticipant[];
+          availablePlayers: Player[];
+          assignments: PlayerAssignment[];
+          viewer: AuctionViewer | null;
+          permissions: AuctionPermissions;
+          roles: RoleOption[];
+      };
+
+export default function AuctionsShow(props: AuctionsShowProps) {
+    if (props.locked) {
+        return <LockedAuctionGate auction={props.auction} />;
+    }
+
+    return <UnlockedAuctionShow {...props} />;
+}
+
+function LockedAuctionGate({ auction }: { auction: LockedAuction }) {
+    const [password, setPassword] = useState('');
+    const [processing, setProcessing] = useState(false);
+
+    function submit(event: FormEvent) {
+        event.preventDefault();
+
+        if (!password) {
+            return;
+        }
+
+        setProcessing(true);
+
+        router.post(
+            auctions.unlock(auction.id).url,
+            { password },
+            { onFinish: () => setProcessing(false) },
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-6 p-4">
+            <Head title={auction.name} />
+
+            <Card className="max-w-md">
+                <CardHeader>
+                    <CardTitle>{auction.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={submit} className="space-y-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">
+                                Questa asta è protetta da password
+                            </Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                autoComplete="current-password"
+                                autoFocus
+                                value={password}
+                                onChange={(e) =>
+                                    setPassword(e.target.value)
+                                }
+                            />
+                        </div>
+                        <Button type="submit" disabled={processing}>
+                            Sblocca
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+function UnlockedAuctionShow({
     auction,
     participants,
     availablePlayers,

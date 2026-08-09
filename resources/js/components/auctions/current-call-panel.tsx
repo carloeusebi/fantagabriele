@@ -39,7 +39,6 @@ export function CurrentCallPanel({
     canAdvise: boolean;
 }) {
     const call = auction.current_call;
-    const agentParticipant = participants.find((p) => p.is_agent) ?? null;
 
     if (call) {
         return (
@@ -47,7 +46,7 @@ export function CurrentCallPanel({
                 auctionId={auction.id}
                 call={call}
                 participants={participants}
-                canAskForBidAdvice={agentParticipant !== null && canAdvise}
+                canAskForBidAdvice={canAdvise}
                 canResolve={canResolve}
             />
         );
@@ -63,7 +62,7 @@ export function CurrentCallPanel({
             defaultCallerId={auction.current_turn_participant?.id ?? null}
             participants={participants}
             availablePlayers={availablePlayers}
-            canAskForCallAdvice={agentParticipant !== null && canAdvise}
+            canAskForCallAdvice={canAdvise}
             canCall={canCall}
         />
     );

@@ -15,6 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('auctions/{auction}/status', [AuctionController::class, 'updateStatus'])->name('auctions.status.update');
     Route::delete('auctions/{auction}', [AuctionController::class, 'destroy'])->name('auctions.destroy');
     Route::post('auctions/{auction}/join', [AuctionController::class, 'join'])->name('auctions.join');
+    Route::post('auctions/{auction}/unlock', [AuctionController::class, 'unlock'])->name('auctions.unlock');
 
     Route::post('auctions/{auction}/participants', [AuctionParticipantController::class, 'store'])->name('auctions.participants.store');
     Route::patch('auctions/{auction}/participants/{participant}', [AuctionParticipantController::class, 'update'])->name('auctions.participants.update');
