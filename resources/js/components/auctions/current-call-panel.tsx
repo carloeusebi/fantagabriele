@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { PlayerCombobox } from '@/components/auctions/player-combobox';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,19 +21,26 @@ import { hasCompletedRole } from '@/lib/auction';
 import auctionAdvisor from '@/routes/auctions/advisor';
 import auctionAssignments from '@/routes/auctions/assignments';
 import auctionCall from '@/routes/auctions/call';
-import type { Auction, AuctionParticipant, Player, PlayerRoleValue } from '@/types/auction';
+import type {
+    Auction,
+    AuctionParticipant,
+    Player,
+    PlayerRoleValue,
+} from '@/types/auction';
 
-type CallAdvice = { player_id: number; reasoning: string };
-type BidAdvice = { max_price: number; reasoning: string };
+type CallAdvice = { player_id: number; reasoning: string; is_bluff: boolean };
+type BidAdvice = { max_price: number; reasoning: string; is_bluff: boolean };
 
 function AdvisorReasoning({
     reasoning,
     streaming,
     error,
+    isBluff,
 }: {
     reasoning: string;
     streaming: boolean;
     error: string | null;
+    isBluff?: boolean;
 }) {
     if (error) {
         return <p className="text-sm text-destructive">{error}</p>;
@@ -50,7 +58,12 @@ function AdvisorReasoning({
         return null;
     }
 
-    return <p className="text-sm text-muted-foreground">{reasoning}</p>;
+    return (
+        <div className="space-y-1">
+            {isBluff && <Badge variant="destructive">Bluff</Badge>}
+            <p className="text-sm text-muted-foreground">{reasoning}</p>
+        </div>
+    );
 }
 
 export function CurrentCallPanel({
@@ -59,14 +72,16 @@ export function CurrentCallPanel({
     availablePlayers,
     canCall,
     canResolve,
-    canAdvise,
+    canAdviseCall,
+    canAdviseBid,
 }: {
     auction: Auction;
     participants: AuctionParticipant[];
     availablePlayers: Player[];
     canCall: boolean;
     canResolve: boolean;
-    canAdvise: boolean;
+    canAdviseCall: boolean;
+    canAdviseBid: boolean;
 }) {
     const call = auction.current_call;
 
@@ -77,7 +92,7 @@ export function CurrentCallPanel({
                 call={call}
                 participants={participants}
                 currentPhase={auction.current_phase}
-                canAskForBidAdvice={canAdvise}
+                canAskForBidAdvice={canAdviseBid}
                 canResolve={canResolve}
             />
         );
@@ -94,7 +109,7 @@ export function CurrentCallPanel({
             participants={participants}
             currentPhase={auction.current_phase}
             availablePlayers={availablePlayers}
-            canAskForCallAdvice={canAdvise}
+            canAskForCallAdvice={canAdviseCall}
             canCall={canCall}
         />
     );
@@ -130,6 +145,7 @@ function OpenCallForm({
     useEffect(() => {
         if (advisor.result) {
             setPlayerId(String(advisor.result.player_id));
+            router.reload({ only: ['advisorEntries'] });
         }
     }, [advisor.result]);
 
@@ -173,6 +189,7 @@ function OpenCallForm({
                             reasoning={advisor.reasoning}
                             streaming={advisor.streaming}
                             error={advisor.error}
+                            isBluff={advisor.result?.is_bluff}
                         />
                     </div>
                 )}
@@ -257,6 +274,7 @@ function ResolveCallForm({
     useEffect(() => {
         if (advisor.result) {
             setPrice(String(advisor.result.max_price));
+            router.reload({ only: ['advisorEntries'] });
         }
     }, [advisor.result]);
 
@@ -320,6 +338,7 @@ function ResolveCallForm({
                             reasoning={advisor.reasoning}
                             streaming={advisor.streaming}
                             error={advisor.error}
+                            isBluff={advisor.result?.is_bluff}
                         />
                     </div>
                 )}

@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Auction;
 use App\AuctionAssistant\Contracts\AuctionAssistant;
 use App\AuctionAssistant\Data\BidSuggestion;
 use App\AuctionAssistant\Data\CallSuggestion;
+use App\Enums\AuctionAdvisorEntryKind;
 use App\Exceptions\Auction\AuctionRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\Auction;
+use App\Models\AuctionAdvisorEntry;
 use App\Models\AuctionParticipant;
+use App\Models\User;
 use App\Services\Auction\AuctionContextBuilder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\StreamedEvent;
 use Illuminate\Support\Facades\Gate;
@@ -20,13 +24,16 @@ class AuctionAdvisorController extends Controller
 {
     public function suggestCall(Request $request, Auction $auction, AuctionContextBuilder $contextBuilder, AuctionAssistant $assistant): StreamedResponse
     {
-        Gate::authorize('advise', $auction);
+        Gate::authorize('adviseCall', $auction);
 
-        $context = $contextBuilder->forCall($auction, $this->controlledParticipant($request, $auction));
+        $participant = $this->controlledParticipant($request, $auction);
 
-        return response()->eventStream(function () use ($assistant, $context) {
+        $context = $contextBuilder->forCall($auction, $participant);
+        $user = $request->user();
+
+        return response()->eventStream(function () use ($assistant, $context, $auction, $user) {
             try {
-                $stream = $assistant->streamCall($context);
+                $stream = $assistant->streamCall($context, $auction, $user);
 
                 foreach ($stream as $delta) {
                     yield new StreamedEvent(event: 'delta', data: $delta);
@@ -35,9 +42,14 @@ class AuctionAdvisorController extends Controller
                 /** @var CallSuggestion $suggestion */
                 $suggestion = $stream->getReturn();
 
+                $this->recordEntry($auction, $user, AuctionAdvisorEntryKind::Call, $context->toArray(), $suggestion->reasoning, [
+                    'player_id' => $suggestion->playerId,
+                ], $suggestion->isBluff);
+
                 yield new StreamedEvent(event: 'result', data: json_encode([
                     'player_id' => $suggestion->playerId,
                     'reasoning' => $suggestion->reasoning,
+                    'is_bluff' => $suggestion->isBluff,
                 ], JSON_THROW_ON_ERROR));
             } catch (Throwable $e) {
                 yield new StreamedEvent(event: 'failure', data: json_encode([
@@ -60,10 +72,11 @@ class AuctionAdvisorController extends Controller
         }
 
         $context = $contextBuilder->forBid($auction, $call->player, $participant);
+        $user = $request->user();
 
-        return response()->eventStream(function () use ($assistant, $context) {
+        return response()->eventStream(function () use ($assistant, $context, $auction, $user) {
             try {
-                $stream = $assistant->streamMaxBid($context);
+                $stream = $assistant->streamMaxBid($context, $auction, $user);
 
                 foreach ($stream as $delta) {
                     yield new StreamedEvent(event: 'delta', data: $delta);
@@ -72,9 +85,14 @@ class AuctionAdvisorController extends Controller
                 /** @var BidSuggestion $suggestion */
                 $suggestion = $stream->getReturn();
 
+                $this->recordEntry($auction, $user, AuctionAdvisorEntryKind::Bid, $context->toArray(), $suggestion->reasoning, [
+                    'max_price' => $suggestion->maxPrice,
+                ], $suggestion->isBluff);
+
                 yield new StreamedEvent(event: 'result', data: json_encode([
                     'max_price' => $suggestion->maxPrice,
                     'reasoning' => $suggestion->reasoning,
+                    'is_bluff' => $suggestion->isBluff,
                 ], JSON_THROW_ON_ERROR));
             } catch (Throwable $e) {
                 yield new StreamedEvent(event: 'failure', data: json_encode([
@@ -82,6 +100,32 @@ class AuctionAdvisorController extends Controller
                 ], JSON_THROW_ON_ERROR));
             }
         }, endStreamWith: null);
+    }
+
+    /**
+     * Generate (or, if the conversation already holds one, revise) the
+     * controlled participant's overall auction strategy. Unlike the call
+     * and bid suggestions, this doesn't narrate live — it's a one-off plan
+     * the user reads once it's ready.
+     */
+    public function strategy(Request $request, Auction $auction, AuctionContextBuilder $contextBuilder, AuctionAssistant $assistant): JsonResponse
+    {
+        Gate::authorize('advise', $auction);
+
+        $participant = $this->controlledParticipant($request, $auction);
+        $user = $request->user();
+
+        $context = $contextBuilder->forStrategy($auction, $participant);
+
+        $strategy = $assistant->strategy($context, $auction, $user);
+
+        $entry = $this->recordEntry($auction, $user, AuctionAdvisorEntryKind::Strategy, $context->toArray(), $strategy->summary, [
+            'summary' => $strategy->summary,
+            'budget_plan' => $strategy->budgetPlan,
+            'priority_targets' => $strategy->priorityTargets,
+        ]);
+
+        return response()->json(['entry' => $entry]);
     }
 
     /**
@@ -98,6 +142,30 @@ class AuctionAdvisorController extends Controller
         }
 
         return $participant;
+    }
+
+    /**
+     * @param  array<string, mixed>  $requestContext
+     * @param  array<string, mixed>  $response
+     */
+    private function recordEntry(
+        Auction $auction,
+        User $user,
+        AuctionAdvisorEntryKind $kind,
+        array $requestContext,
+        ?string $reasoning,
+        array $response,
+        bool $isBluff = false,
+    ): AuctionAdvisorEntry {
+        return AuctionAdvisorEntry::query()->create([
+            'auction_id' => $auction->id,
+            'user_id' => $user->id,
+            'kind' => $kind,
+            'request_context' => $requestContext,
+            'reasoning' => $reasoning,
+            'response' => $response,
+            'is_bluff' => $isBluff,
+        ]);
     }
 
     /**

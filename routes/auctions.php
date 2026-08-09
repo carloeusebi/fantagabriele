@@ -32,4 +32,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('auctions/{auction}/advisor/call', [AuctionAdvisorController::class, 'suggestCall'])->name('auctions.advisor.call');
     Route::get('auctions/{auction}/advisor/bid', [AuctionAdvisorController::class, 'suggestMaxBid'])->name('auctions.advisor.bid');
+    Route::post('auctions/{auction}/advisor/strategy', [AuctionAdvisorController::class, 'strategy'])->name('auctions.advisor.strategy');
 });

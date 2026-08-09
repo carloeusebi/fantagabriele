@@ -10,6 +10,7 @@ use App\Http\Requests\Auction\StoreAuctionRequest;
 use App\Http\Requests\Auction\UnlockAuctionRequest;
 use App\Http\Requests\Auction\UpdateAuctionStatusRequest;
 use App\Models\Auction;
+use App\Models\AuctionAdvisorEntry;
 use App\Models\AuctionParticipant;
 use App\Models\Player;
 use App\Models\PlayerAssignment;
@@ -109,6 +110,12 @@ class AuctionController extends Controller
             ? AuctionParticipant::query()->find($viewer->auction_participant_id)
             : null;
 
+        $advisorEntries = AuctionAdvisorEntry::query()
+            ->where('auction_id', $auction->id)
+            ->where('user_id', $request->user()->id)
+            ->orderBy('created_at')
+            ->get();
+
         return Inertia::render('auctions/show', [
             'locked' => false,
             'auction' => $auction,
@@ -116,6 +123,7 @@ class AuctionController extends Controller
             'availablePlayers' => $availablePlayers,
             'unassignedPlayers' => $unassignedPlayers,
             'assignments' => $assignments,
+            'advisorEntries' => $advisorEntries,
             'viewer' => $viewer ? [
                 'auction_participant_id' => $viewer->auction_participant_id,
             ] : null,
@@ -126,6 +134,7 @@ class AuctionController extends Controller
                     || ($claimedParticipant !== null && Gate::allows('call', [$auction, $claimedParticipant])),
                 'resolveCall' => $canResolveCall,
                 'advise' => Gate::allows('advise', $auction),
+                'adviseCall' => Gate::allows('adviseCall', $auction),
             ],
             'roles' => collect(PlayerRole::cases())->map(fn (PlayerRole $role) => [
                 'value' => $role->value,

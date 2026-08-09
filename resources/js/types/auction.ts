@@ -59,6 +59,19 @@ export type AuctionPermissions = {
     call: boolean;
     resolveCall: boolean;
     advise: boolean;
+    adviseCall: boolean;
+};
+
+export type AdvisorEntryKind = 'strategy' | 'call' | 'bid';
+
+export type AdvisorEntry = {
+    id: number;
+    kind: AdvisorEntryKind;
+    request_context: Record<string, unknown>;
+    reasoning: string | null;
+    response: Record<string, unknown> | null;
+    is_bluff: boolean;
+    created_at: string;
 };
 
 export type AuctionCall = {

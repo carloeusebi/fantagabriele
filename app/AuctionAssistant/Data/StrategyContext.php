@@ -2,22 +2,22 @@
 
 namespace App\AuctionAssistant\Data;
 
-final class CallSuggestionContext
+final class StrategyContext
 {
     /**
+     * @param  array<string, int>  $roleSlots
      * @param  array<string, mixed>  $controlledParticipant
      * @param  array<int, array<string, mixed>>  $otherParticipants
-     * @param  array<int, array<string, mixed>>  $availablePlayers
      * @param  array<int, array<string, mixed>>  $recentPurchases
+     * @param  array<string, array<int, array<string, mixed>>>  $availablePlayersByRole
      */
     public function __construct(
-        public string $role,
-        public string $roleLabel,
         public int $budgetPerParticipant,
+        public array $roleSlots,
         public array $controlledParticipant,
         public array $otherParticipants,
-        public array $availablePlayers,
         public array $recentPurchases,
+        public array $availablePlayersByRole,
     ) {}
 
     /**
@@ -26,13 +26,12 @@ final class CallSuggestionContext
     public function toArray(): array
     {
         return [
-            'role' => $this->role,
-            'role_label' => $this->roleLabel,
             'budget_per_participant' => $this->budgetPerParticipant,
+            'role_slots' => $this->roleSlots,
             'controlled_participant' => $this->controlledParticipant,
             'other_participants' => $this->otherParticipants,
-            'available_players' => $this->availablePlayers,
             'recent_purchases' => $this->recentPurchases,
+            'available_players_by_role' => $this->availablePlayersByRole,
         ];
     }
 }
