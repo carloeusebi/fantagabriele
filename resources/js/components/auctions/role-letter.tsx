@@ -12,7 +12,7 @@ export function RoleLetter({
     return (
         <span
             className={cn(
-                'inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-bold text-white',
+                'inline-flex size-4 shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white',
                 roleLetterClasses[role],
                 className,
             )}
