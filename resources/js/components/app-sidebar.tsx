@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, Gavel, LayoutGrid, Users } from 'lucide-react';
+import { Gavel, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -13,26 +13,20 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
 import { index as auctionsIndex } from '@/routes/auctions';
 import { index as playersIndex } from '@/routes/players';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
+        title: 'Aste',
+        href: auctionsIndex(),
+        icon: Gavel,
     },
     {
         title: 'Players',
         href: playersIndex(),
         icon: Users,
-    },
-    {
-        title: 'Aste',
-        href: auctionsIndex(),
-        icon: Gavel,
     },
 ];
 
@@ -47,7 +41,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={auctionsIndex()} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

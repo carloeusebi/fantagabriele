@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { dashboard, login } from '@/routes';
+import { login } from '@/routes';
 import auctions from '@/routes/auctions';
 
 const STATUS_LINES = [
@@ -87,10 +87,10 @@ export default function Welcome() {
                         </div>
                         {auth.user ? (
                             <Link
-                                href={dashboard()}
+                                href={auctions.index()}
                                 className="text-sm font-medium text-foreground hover:text-primary"
                             >
-                                Vai alla dashboard
+                                Vai alle aste
                             </Link>
                         ) : (
                             <Link
@@ -120,23 +120,12 @@ export default function Welcome() {
                             </p>
                             <div className="mt-8 flex flex-wrap items-center gap-3">
                                 {auth.user ? (
-                                    <>
-                                        <Button asChild size="lg">
-                                            <Link href={dashboard()}>
-                                                Vai alla dashboard
-                                                <ArrowRight />
-                                            </Link>
-                                        </Button>
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            size="lg"
-                                        >
-                                            <Link href={auctions.index()}>
-                                                Le mie aste
-                                            </Link>
-                                        </Button>
-                                    </>
+                                    <Button asChild size="lg">
+                                        <Link href={auctions.index()}>
+                                            Vai alle aste
+                                            <ArrowRight />
+                                        </Link>
+                                    </Button>
                                 ) : (
                                     <>
                                         <Button asChild size="lg">
@@ -284,10 +273,10 @@ export default function Welcome() {
                         </div>
                         {auth.user ? (
                             <Link
-                                href={dashboard()}
+                                href={auctions.index()}
                                 className="font-medium text-foreground hover:text-primary"
                             >
-                                Vai alla dashboard
+                                Vai alle aste
                             </Link>
                         ) : (
                             <Link
