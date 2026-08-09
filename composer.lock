@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3f1f20d47828a78741aee9aa2a354cbc",
+    "content-hash": "8bad914b741ec9549b42fb7f8aefe471",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -339,6 +339,80 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "cocosport/rybbit-sdk-for-laravel",
+            "version": "v0.2.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel.git",
+                "reference": "3655f04e910dd69b571967569f7fba89d33dc508"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Cocosport/Rybbit-Sdk-for-Laravel/zipball/3655f04e910dd69b571967569f7fba89d33dc508",
+                "reference": "3655f04e910dd69b571967569f7fba89d33dc508",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^12.0||^13.0",
+                "php": "^8.3"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.9",
+                "laravel/pao": "^1.0",
+                "laravel/pint": "^1.29",
+                "orchestra/testbench": "^10.0||^11.0",
+                "pestphp/pest": "^4.6||^5.0",
+                "pestphp/pest-plugin-laravel": "^4.1||^5.0",
+                "pestphp/pest-plugin-type-coverage": "^4.0||^5.0",
+                "phpstan/extension-installer": "^1.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Rybbit": "Cocosport\\Rybbit\\Facades\\Rybbit"
+                    },
+                    "providers": [
+                        "Cocosport\\Rybbit\\RybbitServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Cocosport\\Rybbit\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlo Eusebi",
+                    "email": "carloeusebi@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A simple, elegant Laravel package for integrating Rybbit analytics into your application. This SDK provides a clean, Laravel-native way to track events, page views, and custom analytics data using Rybbit's privacy-friendly, open-source analytics platform",
+            "homepage": "https://github.com/cocosport/rybbit-sdk-for-laravel",
+            "keywords": [
+                "cocosport",
+                "laravel",
+                "rybbit-sdk-for-laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel/issues",
+                "source": "https://github.com/Cocosport/Rybbit-Sdk-for-Laravel/tree/v0.2.2"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/cocosport",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-08-07T21:41:58+00:00"
         },
         {
             "name": "composer/pcre",
