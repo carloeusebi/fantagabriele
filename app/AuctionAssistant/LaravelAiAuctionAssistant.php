@@ -70,7 +70,7 @@ class LaravelAiAuctionAssistant implements AuctionAssistant
         $agent = $this->withConversation(new SuggestMaxBidAgent($context), $auction, $user);
 
         $response = $agent->prompt(
-            'Calcola il prezzo massimo da offrire per questo giocatore.',
+            "Calcola il prezzo massimo da offrire per {$context->player['name']} (id {$context->player['id']}), il giocatore attualmente in asta.",
             provider: Lab::OpenAI,
         );
 
@@ -155,7 +155,7 @@ class LaravelAiAuctionAssistant implements AuctionAssistant
         $agent = $this->withConversation(new NarrateBidAgent($context, $suggestion), $auction, $user);
 
         $stream = $agent->stream(
-            'Spiega brevemente il ragionamento dietro questa decisione.',
+            "Spiega brevemente il ragionamento dietro questa decisione su {$context->player['name']}.",
             provider: Lab::OpenAI,
         );
 

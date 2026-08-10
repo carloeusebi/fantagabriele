@@ -32,11 +32,13 @@ class NarrateBidAgent implements Agent, Conversational
     public function instructions(): Stringable|string
     {
         $bluffLabel = $this->suggestion->isBluff ? 'sì' : 'no';
+        $playerName = $this->context->player['name'] ?? "id {$this->context->player['id']}";
 
         return <<<TEXT
-            Sei l'assistente strategico di un partecipante a un'asta del fantacalcio dal vivo. Il giocatore descritto in "player" è in asta in questo momento.
+            Sei l'assistente strategico di un partecipante a un'asta del fantacalcio dal vivo. {$playerName}, descritto in "player", è in asta in questo momento.
 
             La decisione è GIÀ STATA PRESA da un altro agente, con questo esito:
+            - Giocatore: {$playerName}
             - Prezzo massimo: {$this->suggestion->maxPrice} crediti
             - Bluff: {$bluffLabel}
             - Motivazione tecnica: {$this->suggestion->reasoning}
