@@ -462,14 +462,6 @@ function SetupPanel({
         );
     }
 
-    function designateAgent(participantId: number) {
-        router.patch(
-            auctionParticipants.update([auction.id, participantId]).url,
-            { is_agent: true },
-            { preserveScroll: true },
-        );
-    }
-
     function removeParticipant(participantId: number) {
         router.delete(
             auctionParticipants.destroy([auction.id, participantId]).url,
@@ -501,23 +493,8 @@ function SetupPanel({
                                 <span className="font-medium">
                                     {participant.name}
                                 </span>
-                                {participant.is_agent && (
-                                    <Badge variant="outline">IA</Badge>
-                                )}
                             </div>
                             <div className="flex gap-2">
-                                {!participant.is_agent && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                            designateAgent(participant.id)
-                                        }
-                                    >
-                                        Gestito dall'IA
-                                    </Button>
-                                )}
                                 <Button
                                     type="button"
                                     variant="ghost"

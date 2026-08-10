@@ -33,7 +33,6 @@ class StoreAuctionRequest extends FormRequest
             'slots_forward' => ['required', 'integer', 'min:1'],
             'participants' => ['required', 'array', 'min:2'],
             'participants.*.name' => ['required', 'string', 'max:255'],
-            'participants.*.is_agent' => ['sometimes', 'boolean'],
         ];
     }
 }

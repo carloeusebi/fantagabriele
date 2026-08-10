@@ -14,10 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $id
  * @property int $auction_id
  * @property string $name
- * @property bool $is_agent
  * @property int $call_order
  */
-#[Fillable(['auction_id', 'name', 'is_agent', 'call_order'])]
+#[Fillable(['auction_id', 'name', 'call_order'])]
 class AuctionParticipant extends Model
 {
     /**
@@ -88,7 +87,6 @@ class AuctionParticipant extends Model
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'is_agent' => $this->is_agent,
             'call_order' => $this->call_order,
             'claimed_by' => $this->viewer?->user?->name,
             'claimed_by_user_id' => $this->viewer?->user_id,
@@ -107,18 +105,6 @@ class AuctionParticipant extends Model
                 'role' => $assignment->player->role->value,
                 'team' => $assignment->player->team?->name,
             ])->values(),
-        ];
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'is_agent' => 'boolean',
         ];
     }
 }

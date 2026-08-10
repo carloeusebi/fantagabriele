@@ -40,7 +40,6 @@ export type RosterEntry = {
 export type AuctionParticipant = {
     id: number;
     name: string;
-    is_agent: boolean;
     call_order: number;
     claimed_by: string | null;
     claimed_by_user_id: number | null;

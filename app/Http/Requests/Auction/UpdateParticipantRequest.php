@@ -14,7 +14,6 @@ class UpdateParticipantRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'is_agent' => ['sometimes', 'boolean'],
         ];
     }
 }

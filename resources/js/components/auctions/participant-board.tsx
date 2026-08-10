@@ -5,7 +5,11 @@ import { Separator } from '@/components/ui/separator';
 import { hasCompletedRole } from '@/lib/auction';
 import { ROLE_ORDER, roleBadgeClasses } from '@/lib/role-colors';
 import { cn } from '@/lib/utils';
-import type { AuctionParticipant, PlayerRoleValue, RosterEntry } from '@/types/auction';
+import type {
+    AuctionParticipant,
+    PlayerRoleValue,
+    RosterEntry,
+} from '@/types/auction';
 
 export function ParticipantBoard({
     participants,
@@ -43,9 +47,6 @@ export function ParticipantBoard({
                                         />
                                     )}
                                 {participant.name}
-                                {participant.is_agent && (
-                                    <Badge variant="outline">IA</Badge>
-                                )}
                             </span>
                             <span className="text-sm font-normal text-muted-foreground">
                                 {participant.budget_remaining} crediti
