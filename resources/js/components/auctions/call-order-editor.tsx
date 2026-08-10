@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useAuction } from '@/components/auctions/auction-context';
 import { Button } from '@/components/ui/button';
 import auctionParticipants from '@/routes/auctions/participants';
+import type { AuctionParticipant } from '@/types/auction';
 
 export function CallOrderEditor() {
     const { auction, participants } = useAuction();
@@ -21,11 +22,20 @@ export function CallOrderEditor() {
 
         [next[index], next[swapWith]] = [next[swapWith], next[index]];
 
-        router.put(
-            auctionParticipants.reorder(auctionId).url,
-            { order: next.map((participant) => participant.id) },
-            { preserveScroll: true },
-        );
+        const reordered = next.map((participant, position) => ({
+            ...participant,
+            call_order: position + 1,
+        }));
+
+        router
+            .optimistic<{ participants: AuctionParticipant[] }>(() => ({
+                participants: reordered,
+            }))
+            .put(
+                auctionParticipants.reorder(auctionId).url,
+                { order: next.map((participant) => participant.id) },
+                { preserveScroll: true },
+            );
     }
 
     return (

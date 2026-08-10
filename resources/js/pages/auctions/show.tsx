@@ -231,7 +231,7 @@ function UnlockedAuctionShow({
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
-                    <div className="flex flex-col gap-6 lg:col-span-2">
+                    <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
                         {viewer === null ? (
                             <JoinAuctionGate />
                         ) : (
@@ -262,7 +262,7 @@ function UnlockedAuctionShow({
 
                                         <ParticipantBoard />
 
-                                        <div>
+                                        <div className="min-w-0">
                                             <Heading
                                                 variant="small"
                                                 title="Storico assegnazioni"
@@ -353,7 +353,23 @@ function StatusControls() {
     const { auction } = useAuction();
 
     function update(action: 'start' | 'pause' | 'resume') {
-        router.patch(auctionStatus.update(auction.id).url, { action });
+        // "start" also assigns the first phase and turn server-side, so it
+        // isn't safe to predict optimistically — only pause/resume flip a
+        // single, already-known field.
+        if (action === 'start') {
+            router.patch(auctionStatus.update(auction.id).url, { action });
+
+            return;
+        }
+
+        router
+            .optimistic<{ auction: Auction }>((props) => ({
+                auction: {
+                    ...props.auction,
+                    status: action === 'pause' ? 'paused' : 'in_progress',
+                },
+            }))
+            .patch(auctionStatus.update(auction.id).url, { action });
     }
 
     if (auction.status === 'setup') {

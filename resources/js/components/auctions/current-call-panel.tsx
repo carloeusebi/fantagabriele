@@ -1,10 +1,11 @@
 import { router } from '@inertiajs/react';
-import { Loader, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { AdvisorTranscript } from '@/components/auctions/advisor-transcript';
 import { useAuction } from '@/components/auctions/auction-context';
 import { PlayerCombobox } from '@/components/auctions/player-combobox';
+import { RoleLetter } from '@/components/auctions/role-letter';
 import { MarkdownText } from '@/components/markdown-text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,13 +21,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useAdvisorStream } from '@/hooks/use-advisor-stream';
-import { hasCompletedRole } from '@/lib/auction';
+import { hasCompletedRole, nextEligibleParticipant } from '@/lib/auction';
 import auctionAdvisor from '@/routes/auctions/advisor';
 import auctionAssignments from '@/routes/auctions/assignments';
 import auctionCall from '@/routes/auctions/call';
 import type { Auction } from '@/types/auction';
-import { RoleLetter } from '@/components/auctions/role-letter';
-import { Spinner } from '@/components/ui/spinner';
 
 type CallAdvice = { player_id: number; reasoning: string; is_bluff: boolean };
 type BidAdvice = { max_price: number; reasoning: string; is_bluff: boolean };
@@ -91,12 +90,17 @@ function OpenCallForm() {
     const canAskForCallAdvice = permissions.adviseCall;
     const canCall = permissions.call;
     const defaultCallerId = auction.current_turn_participant?.id ?? null;
+    const currentTurnName = auction.current_turn_participant?.name;
 
     const [playerId, setPlayerId] = useState<string>('');
     const [callerId, setCallerId] = useState<string>(
         defaultCallerId ? String(defaultCallerId) : '',
     );
     const advisor = useAdvisorStream<CallAdvice>();
+
+    useEffect(() => {
+        setCallerId(defaultCallerId ? String(defaultCallerId) : '');
+    }, [defaultCallerId]);
 
     function askForAdvice() {
         advisor.start(auctionAdvisor.call(auctionId).url);
@@ -123,24 +127,54 @@ function OpenCallForm() {
             return;
         }
 
-        router.post(
-            auctionCall.store(auctionId).url,
-            {
-                player_id: Number(playerId),
-                called_by_auction_participant_id: Number(callerId),
-            },
-            {
-                preserveScroll: true,
-                onStart: () => setIsSubmitting(true),
-                onFinish: () => setIsSubmitting(false),
-            },
+        const player = availablePlayers.find(
+            (candidate) => String(candidate.id) === playerId,
         );
+        const caller = participants.find(
+            (candidate) => String(candidate.id) === callerId,
+        );
+
+        router
+            .optimistic<{ auction: Auction }>((props) => ({
+                auction: {
+                    ...props.auction,
+                    current_call: {
+                        id: -1,
+                        player_id: Number(playerId),
+                        called_by_auction_participant_id: Number(callerId),
+                        status: 'open',
+                        player,
+                        called_by: caller
+                            ? { id: caller.id, name: caller.name }
+                            : undefined,
+                    },
+                },
+            }))
+            .post(
+                auctionCall.store(auctionId).url,
+                {
+                    player_id: Number(playerId),
+                    called_by_auction_participant_id: Number(callerId),
+                },
+                {
+                    preserveScroll: true,
+                    onStart: () => setIsSubmitting(true),
+                    onFinish: () => setIsSubmitting(false),
+                },
+            );
     }
 
     return (
         <Card>
-            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-                <CardTitle>Chiama un giocatore</CardTitle>
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
+                <CardTitle>
+                    Chiama un giocatore
+                    {currentTurnName && (
+                        <span className="ml-2 text-sm font-normal text-muted-foreground">
+                            (turno di {currentTurnName})
+                        </span>
+                    )}
+                </CardTitle>
                 <AdvisorTranscript />
             </CardHeader>
             <CardContent className="space-y-4">
@@ -208,11 +242,12 @@ function OpenCallForm() {
                             </Select>
                         </div>
 
-                        <Button type="submit"
-                                disabled={isSubmitting || !playerId || !callerId}
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting || !playerId || !callerId}
                         >
-                            {isSubmitting && <Spinner />}
-                            Chiama</Button>
+                            Chiama
+                        </Button>
                     </form>
                 ) : (
                     <p className="text-sm text-muted-foreground">
@@ -256,6 +291,21 @@ function ResolveCallForm({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advisor.streaming]);
 
+    function predictedNextTurn(props: { auction: Auction }) {
+        const next = nextEligibleParticipant(
+            participants,
+            currentPhase,
+            call.called_by_auction_participant_id,
+        );
+
+        return {
+            current_turn_auction_participant_id:
+                next?.id ?? props.auction.current_turn_auction_participant_id,
+            current_turn_participant:
+                next ?? props.auction.current_turn_participant,
+        };
+    }
+
     const [isAssigning, setIsAssigning] = useState(false);
     function assign(event: FormEvent) {
         event.preventDefault();
@@ -264,34 +314,52 @@ function ResolveCallForm({
             return;
         }
 
-        router.post(
-            auctionAssignments.store(auctionId).url,
-            {
-                auction_participant_id: Number(participantId),
-                price: Number(price),
-            },
-            {
-                preserveScroll: true,
-                onStart: () => setIsAssigning(true),
-                onFinish: () => setIsAssigning(false),
-            },
-        );
+        router
+            .optimistic<{ auction: Auction }>((props) => ({
+                auction: {
+                    ...props.auction,
+                    current_call: undefined,
+                    ...predictedNextTurn(props),
+                },
+            }))
+            .post(
+                auctionAssignments.store(auctionId).url,
+                {
+                    auction_participant_id: Number(participantId),
+                    price: Number(price),
+                },
+                {
+                    preserveScroll: true,
+                    onStart: () => setIsAssigning(true),
+                    onFinish: () => setIsAssigning(false),
+                },
+            );
     }
 
     function unsold() {
-        router.delete(auctionCall.destroy(auctionId).url, {
-            preserveScroll: true,
-        });
+        router
+            .optimistic<{ auction: Auction }>((props) => ({
+                auction: {
+                    ...props.auction,
+                    current_call: undefined,
+                    ...predictedNextTurn(props),
+                },
+            }))
+            .delete(auctionCall.destroy(auctionId).url, {
+                preserveScroll: true,
+            });
     }
 
     return (
         <Card>
-            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-                <CardTitle className="flex items-center gap-1 text-2xl">
-                    In asta:
-                    {call.player && <RoleLetter role={call.player?.role} />}
-                    {call.player?.name}
-                    {call.player?.team ? ` (${call.player.team.name})` : ''}
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
+                <CardTitle className="flex flex-wrap items-center gap-1 text-2xl">
+                    <span>In asta:</span>
+                    <span className="inline-flex items-center gap-1">
+                        {call.player && <RoleLetter role={call.player?.role} />}
+                        {call.player?.name}
+                        {call.player?.team ? ` (${call.player.team.name})` : ''}
+                    </span>
                 </CardTitle>
                 <AdvisorTranscript />
             </CardHeader>
@@ -373,8 +441,10 @@ function ResolveCallForm({
                             />
                         </div>
 
-                        <Button type="submit" disabled={isAssigning || !participantId || !price}>
-                            {isAssigning && <Spinner />}
+                        <Button
+                            type="submit"
+                            disabled={isAssigning || !participantId || !price}
+                        >
                             Registra
                         </Button>
                         <Button

@@ -31,8 +31,8 @@ export function ParticipantBoard() {
                     )}
                 >
                     <CardHeader>
-                        <CardTitle className="flex items-center justify-between gap-2">
-                            <span className="flex items-center gap-2">
+                        <CardTitle className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
+                            <span className="flex flex-wrap items-center gap-2">
                                 {participant.claimed_by_user_id !== null &&
                                     onlineUserIds.includes(
                                         participant.claimed_by_user_id,
