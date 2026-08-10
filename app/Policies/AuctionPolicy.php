@@ -66,10 +66,11 @@ class AuctionPolicy
     }
 
     /**
-     * Determine whether the user can ask the AI advisor for a suggestion.
-     * Allowed for admins and for anyone who has claimed a participant, at
-     * any time — asking for advice doesn't advance the auction, so it
-     * isn't restricted to a participant's own turn.
+     * Determine whether the user can ask the AI advisor for a max-bid
+     * suggestion or for the overall team strategy. Allowed for admins and
+     * for anyone who has claimed a participant, at any time — neither
+     * action advances the auction, so neither is restricted to a
+     * participant's own turn.
      */
     public function advise(User $user, Auction $auction): bool
     {
@@ -80,6 +81,30 @@ class AuctionPolicy
         $viewer = $auction->viewers()->where('user_id', $user->id)->first();
 
         return $viewer !== null && $viewer->auction_participant_id !== null;
+    }
+
+    /**
+     * Determine whether the user can ask the AI advisor which player to
+     * call. Unlike advise(), this mirrors call()'s turn restriction: only
+     * the participant whose turn it currently is (or an admin) may ask, so
+     * suggestions stay tied to the moment they're actually actionable. The
+     * "caller" is always the user's own claimed participant — the advisor
+     * never reasons on someone else's behalf — so, unlike call(), no
+     * explicit participant needs to be passed in.
+     */
+    public function adviseCall(User $user, Auction $auction): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $viewer = $auction->viewers()->where('user_id', $user->id)->first();
+
+        if ($viewer === null || $viewer->auction_participant_id === null) {
+            return false;
+        }
+
+        return $viewer->auction_participant_id === $auction->current_turn_auction_participant_id;
     }
 
     private function isOwner(User $user, Auction $auction): bool

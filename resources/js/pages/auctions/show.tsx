@@ -1,7 +1,9 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { AdvisorStrategyBrief } from '@/components/auctions/advisor-strategy-brief';
+import { AdvisorTranscript } from '@/components/auctions/advisor-transcript';
 import { AssignmentHistory } from '@/components/auctions/assignment-history';
 import { CallOrderEditor } from '@/components/auctions/call-order-editor';
 import { CurrentCallPanel } from '@/components/auctions/current-call-panel';
@@ -21,13 +23,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAdvisorStrategy } from '@/hooks/use-advisor-strategy';
 import { useAuctionChannel } from '@/hooks/use-auction-channel';
 import { useAuctionPresence } from '@/hooks/use-auction-presence';
 import auctions from '@/routes/auctions';
+import auctionAdvisor from '@/routes/auctions/advisor';
 import auctionParticipants from '@/routes/auctions/participants';
 import auctionStatus from '@/routes/auctions/status';
 import type { Auth } from '@/types';
 import type {
+    AdvisorEntry,
     Auction,
     AuctionParticipant,
     AuctionPermissions,
@@ -63,7 +68,9 @@ type AuctionsShowProps =
           auction: Auction;
           participants: AuctionParticipant[];
           availablePlayers: Player[];
+          unassignedPlayers: Player[];
           assignments: PlayerAssignment[];
+          advisorEntries: AdvisorEntry[];
           viewer: AuctionViewer | null;
           permissions: AuctionPermissions;
           roles: RoleOption[];
@@ -117,9 +124,7 @@ function LockedAuctionGate({ auction }: { auction: LockedAuction }) {
                                 autoComplete="current-password"
                                 autoFocus
                                 value={password}
-                                onChange={(e) =>
-                                    setPassword(e.target.value)
-                                }
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                         <Button type="submit" disabled={processing}>
@@ -138,6 +143,7 @@ function UnlockedAuctionShow({
     availablePlayers,
     unassignedPlayers,
     assignments,
+    advisorEntries,
     viewer,
     permissions,
     roles,
@@ -147,6 +153,7 @@ function UnlockedAuctionShow({
     availablePlayers: Player[];
     unassignedPlayers: Player[];
     assignments: PlayerAssignment[];
+    advisorEntries: AdvisorEntry[];
     viewer: AuctionViewer | null;
     permissions: AuctionPermissions;
     roles: RoleOption[];
@@ -160,6 +167,25 @@ function UnlockedAuctionShow({
     const currentPhaseLabel = roles.find(
         (role) => role.value === auction.current_phase,
     )?.label;
+
+    const strategy = useAdvisorStrategy(
+        auctionAdvisor.strategy(auction.id).url,
+    );
+    const latestStrategyEntry =
+        [...advisorEntries].reverse().find((e) => e.kind === 'strategy') ??
+        null;
+
+    useEffect(() => {
+        if (
+            auction.status === 'in_progress' &&
+            permissions.advise &&
+            latestStrategyEntry === null &&
+            !strategy.loading
+        ) {
+            strategy.generate();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auction.status, permissions.advise, latestStrategyEntry]);
 
     return (
         <>
@@ -217,13 +243,21 @@ function UnlockedAuctionShow({
 
                         {auction.status !== 'setup' && (
                             <>
+                                {(latestStrategyEntry || strategy.loading) && (
+                                    <AdvisorStrategyBrief
+                                        entry={latestStrategyEntry}
+                                        loading={strategy.loading}
+                                    />
+                                )}
+
                                 <CurrentCallPanel
                                     auction={auction}
                                     participants={participants}
                                     availablePlayers={availablePlayers}
                                     canCall={permissions.call}
                                     canResolve={permissions.resolveCall}
-                                    canAdvise={permissions.advise}
+                                    canAdviseCall={permissions.adviseCall}
+                                    canAdviseBid={permissions.advise}
                                 />
 
                                 <ParticipantBoard
@@ -252,6 +286,8 @@ function UnlockedAuctionShow({
                                         />
                                     </div>
                                 </div>
+
+                                <AdvisorTranscript entries={advisorEntries} />
                             </>
                         )}
                     </>

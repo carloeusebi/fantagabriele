@@ -37,6 +37,18 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /**
+     * Default attribute values for a new, unsaved instance. Needed for
+     * is_admin specifically: Eloquent doesn't re-hydrate DB-side column
+     * defaults after create(), so without this a freshly created user has
+     * no is_admin attribute at all until the model is refreshed.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_admin' => false,
+    ];
+
     public function isAdmin(): bool
     {
         return $this->is_admin;
@@ -62,6 +74,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 }
