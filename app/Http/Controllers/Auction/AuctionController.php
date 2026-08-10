@@ -52,7 +52,6 @@ class AuctionController extends Controller
             foreach ($request->validated('participants') as $index => $participant) {
                 $auction->participants()->create([
                     'name' => $participant['name'],
-                    'is_agent' => $participant['is_agent'] ?? false,
                     'call_order' => $index + 1,
                 ]);
             }

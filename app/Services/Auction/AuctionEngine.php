@@ -45,10 +45,6 @@ class AuctionEngine
                 throw AuctionRuleException::because('Aggiungi almeno un partecipante prima di avviare l\'asta.');
             }
 
-            if ($participants->where('is_agent', true)->count() !== 1) {
-                throw AuctionRuleException::because('Deve esserci esattamente un partecipante gestito dall\'agente.');
-            }
-
             $auction->update([
                 'status' => AuctionStatus::InProgress,
                 'current_phase' => PlayerRole::Goalkeeper,
@@ -158,21 +154,6 @@ class AuctionEngine
             $this->assertInSetup($auction);
 
             $participant->delete();
-        });
-    }
-
-    /**
-     * Designate the single participant controlled by the AI advisor,
-     * unsetting the flag on every other participant in the auction.
-     */
-    public function designateAgent(AuctionParticipant $participant): void
-    {
-        DB::transaction(function () use ($participant) {
-            AuctionParticipant::query()
-                ->where('auction_id', $participant->auction_id)
-                ->update(['is_agent' => false]);
-
-            $participant->update(['is_agent' => true]);
         });
     }
 

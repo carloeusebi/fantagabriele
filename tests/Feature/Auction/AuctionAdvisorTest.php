@@ -83,11 +83,11 @@ test('the advisor streams call advice from the perspective of the participant th
         'current_phase' => PlayerRole::Goalkeeper,
     ]);
 
-    $agentParticipant = $auction->participants()->create([
-        'name' => 'Bot', 'is_agent' => true, 'call_order' => 1,
+    $otherParticipant = $auction->participants()->create([
+        'name' => 'Bot', 'call_order' => 1,
     ]);
     $myParticipant = $auction->participants()->create([
-        'name' => 'Me', 'is_agent' => false, 'call_order' => 2,
+        'name' => 'Me', 'call_order' => 2,
     ]);
 
     $auction->update(['current_turn_auction_participant_id' => $myParticipant->id]);
@@ -117,7 +117,7 @@ test('the advisor streams call advice from the perspective of the participant th
 
     expect($assistant->callContext)->not->toBeNull();
     expect($assistant->callContext->controlledParticipant['id'])->toBe($myParticipant->id);
-    expect($assistant->callContext->controlledParticipant['id'])->not->toBe($agentParticipant->id);
+    expect($assistant->callContext->controlledParticipant['id'])->not->toBe($otherParticipant->id);
     expect($streamed)->toContain('event: delta');
     expect($streamed)->toContain('event: result');
 
@@ -134,10 +134,10 @@ test('a participant who is not on turn cannot ask who to call, but can still ask
     ]);
 
     $otherParticipant = $auction->participants()->create([
-        'name' => 'Altro', 'is_agent' => false, 'call_order' => 1,
+        'name' => 'Altro', 'call_order' => 1,
     ]);
     $myParticipant = $auction->participants()->create([
-        'name' => 'Me', 'is_agent' => false, 'call_order' => 2,
+        'name' => 'Me', 'call_order' => 2,
     ]);
 
     $auction->update(['current_turn_auction_participant_id' => $otherParticipant->id]);
@@ -185,7 +185,7 @@ test('a user cannot get advice for an auction they have not joined as a particip
         'current_phase' => PlayerRole::Goalkeeper,
     ]);
 
-    $auction->participants()->create(['name' => 'Bot', 'is_agent' => true, 'call_order' => 1]);
+    $auction->participants()->create(['name' => 'Bot', 'call_order' => 1]);
     $auction->viewers()->create(['user_id' => $spectator->id, 'auction_participant_id' => null]);
 
     $this->actingAs($spectator)
@@ -202,7 +202,7 @@ test('an admin without a claimed participant cannot get advice', function () {
         'current_phase' => PlayerRole::Goalkeeper,
     ]);
 
-    $auction->participants()->create(['name' => 'Bot', 'is_agent' => true, 'call_order' => 1]);
+    $auction->participants()->create(['name' => 'Bot', 'call_order' => 1]);
 
     $this->actingAs($admin)
         ->getJson(route('auctions.advisor.call', $auction))
@@ -219,10 +219,10 @@ test('any claimed participant can generate the AI strategy at any time, and it g
     ]);
 
     $otherParticipant = $auction->participants()->create([
-        'name' => 'Altro', 'is_agent' => false, 'call_order' => 1,
+        'name' => 'Altro', 'call_order' => 1,
     ]);
     $myParticipant = $auction->participants()->create([
-        'name' => 'Me', 'is_agent' => false, 'call_order' => 2,
+        'name' => 'Me', 'call_order' => 2,
     ]);
 
     // It's not my turn, but strategy isn't turn-restricted.

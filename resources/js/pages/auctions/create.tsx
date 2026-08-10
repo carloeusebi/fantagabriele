@@ -10,7 +10,6 @@ import auctions, { create as auctionsCreate } from '@/routes/auctions';
 
 type ParticipantInput = {
     name: string;
-    is_agent: boolean;
 };
 
 export default function AuctionsCreate() {
@@ -22,10 +21,7 @@ export default function AuctionsCreate() {
         slots_defender: 8,
         slots_midfielder: 8,
         slots_forward: 6,
-        participants: [
-            { name: '', is_agent: true },
-            { name: '', is_agent: false },
-        ] as ParticipantInput[],
+        participants: [{ name: '' }, { name: '' }] as ParticipantInput[],
     });
 
     function updateParticipant(
@@ -41,10 +37,7 @@ export default function AuctionsCreate() {
     }
 
     function addParticipant() {
-        setData('participants', [
-            ...data.participants,
-            { name: '', is_agent: false },
-        ]);
+        setData('participants', [...data.participants, { name: '' }]);
     }
 
     function removeParticipant(index: number) {
@@ -82,9 +75,7 @@ export default function AuctionsCreate() {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password">
-                            Password (opzionale)
-                        </Label>
+                        <Label htmlFor="password">Password (opzionale)</Label>
                         <Input
                             id="password"
                             type="password"
@@ -210,25 +201,6 @@ export default function AuctionsCreate() {
                                     placeholder={`Partecipante ${index + 1}`}
                                     required
                                 />
-                                <label className="flex items-center gap-1.5 text-sm whitespace-nowrap">
-                                    <input
-                                        type="radio"
-                                        name="is_agent"
-                                        checked={participant.is_agent}
-                                        onChange={() =>
-                                            setData(
-                                                'participants',
-                                                data.participants.map(
-                                                    (p, i) => ({
-                                                        ...p,
-                                                        is_agent: i === index,
-                                                    }),
-                                                ),
-                                            )
-                                        }
-                                    />
-                                    Gestito dall'IA
-                                </label>
                                 <Button
                                     type="button"
                                     variant="ghost"

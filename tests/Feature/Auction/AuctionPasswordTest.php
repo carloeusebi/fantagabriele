@@ -17,8 +17,8 @@ test('creating an auction with a password stores it hashed', function () {
         'slots_midfielder' => 8,
         'slots_forward' => 6,
         'participants' => [
-            ['name' => 'Alice', 'is_agent' => true],
-            ['name' => 'Bob', 'is_agent' => false],
+            ['name' => 'Alice'],
+            ['name' => 'Bob'],
         ],
     ])->assertRedirect();
 
@@ -40,8 +40,8 @@ test('creating an auction without a password leaves it unprotected', function ()
         'slots_midfielder' => 8,
         'slots_forward' => 6,
         'participants' => [
-            ['name' => 'Alice', 'is_agent' => true],
-            ['name' => 'Bob', 'is_agent' => false],
+            ['name' => 'Alice'],
+            ['name' => 'Bob'],
         ],
     ])->assertRedirect();
 

@@ -1,6 +1,5 @@
 import { router } from '@inertiajs/react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import auctionParticipants from '@/routes/auctions/participants';
 import type { AuctionParticipant } from '@/types/auction';
@@ -45,9 +44,6 @@ export function CallOrderEditor({
                             {index + 1}.
                         </span>
                         <span className="font-medium">{participant.name}</span>
-                        {participant.is_agent && (
-                            <Badge variant="outline">IA</Badge>
-                        )}
                     </div>
                     <div className="flex gap-1">
                         <Button

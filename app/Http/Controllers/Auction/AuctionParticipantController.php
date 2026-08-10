@@ -23,15 +23,11 @@ class AuctionParticipantController extends Controller
         return back();
     }
 
-    public function update(UpdateParticipantRequest $request, Auction $auction, AuctionParticipant $participant, AuctionEngine $engine): RedirectResponse
+    public function update(UpdateParticipantRequest $request, Auction $auction, AuctionParticipant $participant): RedirectResponse
     {
         Gate::authorize('manageParticipants', $auction);
 
         abort_unless($participant->auction_id === $auction->id, 404);
-
-        if ($request->boolean('is_agent')) {
-            $engine->designateAgent($participant);
-        }
 
         if ($request->has('name')) {
             $participant->update(['name' => $request->validated('name')]);
