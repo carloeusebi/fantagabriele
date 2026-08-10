@@ -9,6 +9,7 @@ final class CallSuggestionContext
      * @param  array<int, array<string, mixed>>  $otherParticipants
      * @param  array<int, array<string, mixed>>  $availablePlayers
      * @param  array<int, array<string, mixed>>  $recentPurchases
+     * @param  array<string, mixed>|null  $userStrategy
      */
     public function __construct(
         public string $role,
@@ -18,6 +19,7 @@ final class CallSuggestionContext
         public array $otherParticipants,
         public array $availablePlayers,
         public array $recentPurchases,
+        public ?array $userStrategy = null,
     ) {}
 
     /**
@@ -33,6 +35,7 @@ final class CallSuggestionContext
             'other_participants' => $this->otherParticipants,
             'available_players' => $this->availablePlayers,
             'recent_purchases' => $this->recentPurchases,
+            'user_strategy' => $this->userStrategy,
         ];
     }
 }

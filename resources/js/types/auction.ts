@@ -1,3 +1,5 @@
+import type { StrategyBrief } from '@/types/strategy';
+
 export type AuctionStatus = 'setup' | 'in_progress' | 'paused' | 'completed';
 
 export type PlayerRoleValue = 'P' | 'D' | 'C' | 'A';
@@ -51,6 +53,8 @@ export type AuctionParticipant = {
 
 export type AuctionViewer = {
     auction_participant_id: number | null;
+    strategy_id: number | null;
+    strategy: StrategyBrief | null;
 };
 
 export type AuctionPermissions = {

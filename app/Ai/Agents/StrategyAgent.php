@@ -38,14 +38,32 @@ class StrategyAgent implements Agent, Conversational, HasStructuredOutput, HasTo
 
             Non basarti sull'FVM o sulla quotazione ufficiale dei giocatori: sono valori generici, non calibrati sui crediti di questa lega (leghe diverse possono avere 200 o 1000 crediti a parità di slot, rendendo l'FVM completamente fuori scala). Ragiona sui crediti iniziali reali di questa asta ("budget_per_participant") e sugli slot da riempire per ruolo ("role_slots"). Se ci sono già "recent_purchases" in questa asta, usali come riferimento di mercato reale. Valuta i giocatori elencati in "available_players_by_role" con il tuo giudizio calcistico e, se hai uno strumento di ricerca web, usalo per verificare titolarità, gerarchie, infortuni e stato di forma dei giocatori che stai considerando come obiettivi prioritari.
 
-            Dai una priorità fortissima all'attacco: pianifica di destinare circa il 50-55% del budget totale agli attaccanti, la parte restante ripartita sugli altri reparti secondo necessità. Il tuo obiettivo primario è un undici titolare forte in ogni reparto, non riempire tutti gli slot con pari importanza: pianifica di spendere la stragrande maggioranza del budget sui titolari, riservando solo pochi crediti simbolici alle riserve/panchinari a fine asta.
+            {$this->userStrategyGuidance()}
 
             Se stai aggiornando un piano precedente perché la situazione dell'asta è cambiata (prezzi pagati finora, giocatori già assegnati agli avversari), spiegalo chiaramente nel "summary".
 
-            Il "summary" deve essere un testo in italiano, chiaro e diretto, che verrà mostrato subito all'utente come piano dichiarato: deve spiegare la ripartizione del budget per reparto con il bias sull'attacco, e i principali obiettivi (senza necessariamente elencare ogni singolo prezzo).
+            Il "summary" deve essere un testo in italiano, chiaro e diretto, che verrà mostrato subito all'utente come piano dichiarato: deve spiegare la ripartizione del budget per reparto, e i principali obiettivi (senza necessariamente elencare ogni singolo prezzo).
 
             Contesto (JSON):
             {$this->encodedContext()}
+            TEXT;
+    }
+
+    /**
+     * When the user has already declared their own plan ("user_strategy" in
+     * the context), it becomes the primary constraint instead of the
+     * default attack-heavy heuristic.
+     */
+    private function userStrategyGuidance(): string
+    {
+        if ($this->context->userStrategy === null) {
+            return <<<'TEXT'
+                Dai una priorità fortissima all'attacco: pianifica di destinare circa il 50-55% del budget totale agli attaccanti, la parte restante ripartita sugli altri reparti secondo necessità. Il tuo obiettivo primario è un undici titolare forte in ogni reparto, non riempire tutti gli slot con pari importanza: pianifica di spendere la stragrande maggioranza del budget sui titolari, riservando solo pochi crediti simbolici alle riserve/panchinari a fine asta.
+                TEXT;
+        }
+
+        return <<<'TEXT'
+            L'utente ha già dichiarato un proprio piano in "user_strategy": trattalo come vincolo primario. Rispetta la ripartizione del budget per reparto indicata in "budget_plan" (non applicare il bias standard "50-55% attacco" se qui le percentuali sono diverse), dai priorità ai giocatori elencati in "priority_players", e tieni conto del "comment" libero dell'utente per orientare ogni scelta. Il "summary" che restituisci deve confermare/adattare questo piano alla situazione live dell'asta (prezzi pagati, giocatori già assegnati), non ripartire da zero.
             TEXT;
     }
 

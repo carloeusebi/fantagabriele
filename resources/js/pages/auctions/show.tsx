@@ -1,6 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { AdvisorStrategyBrief } from '@/components/auctions/advisor-strategy-brief';
 import { AssignmentHistory } from '@/components/auctions/assignment-history';
@@ -9,10 +9,12 @@ import {
     useAuction,
 } from '@/components/auctions/auction-context';
 import { CallOrderEditor } from '@/components/auctions/call-order-editor';
+import { ChooseStrategyDialog } from '@/components/auctions/choose-strategy-dialog';
 import { CurrentCallPanel } from '@/components/auctions/current-call-panel';
 import { ParticipantBoard } from '@/components/auctions/participant-board';
 import { RealtimeEventLogPanel } from '@/components/auctions/realtime-event-log-panel';
 import { RoleChooser } from '@/components/auctions/role-chooser';
+import { SelectedStrategyBrief } from '@/components/auctions/selected-strategy-brief';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,7 @@ import type {
     PlayerAssignment,
     RoleOption,
 } from '@/types/auction';
+import type { StrategyListItem } from '@/types/strategy';
 
 const statusLabels: Record<Auction['status'], string> = {
     setup: 'In preparazione',
@@ -78,6 +81,7 @@ type AuctionsShowProps =
           viewer: AuctionViewer | null;
           permissions: AuctionPermissions;
           roles: RoleOption[];
+          myStrategies: StrategyListItem[];
       };
 
 export default function AuctionsShow(props: AuctionsShowProps) {
@@ -151,6 +155,7 @@ function UnlockedAuctionShow({
     viewer,
     permissions,
     roles,
+    myStrategies,
 }: {
     auction: Auction;
     participants: AuctionParticipant[];
@@ -161,6 +166,7 @@ function UnlockedAuctionShow({
     viewer: AuctionViewer | null;
     permissions: AuctionPermissions;
     roles: RoleOption[];
+    myStrategies: StrategyListItem[];
 }) {
     useAuctionChannel(auction.id);
     const online = useAuctionPresence(auction.id);
@@ -179,17 +185,11 @@ function UnlockedAuctionShow({
         [...advisorEntries].reverse().find((e) => e.kind === 'strategy') ??
         null;
 
-    useEffect(() => {
-        if (
-            auction.status === 'in_progress' &&
-            permissions.advise &&
-            latestStrategyEntry === null &&
-            !strategy.loading
-        ) {
-            strategy.generate();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [auction.status, permissions.advise, latestStrategyEntry]);
+    const needsStrategyChoice =
+        auction.status === 'in_progress' &&
+        permissions.advise &&
+        viewer?.strategy_id == null &&
+        latestStrategyEntry === null;
 
     return (
         <AuctionProvider
@@ -205,6 +205,7 @@ function UnlockedAuctionShow({
                 roles,
                 online,
                 isOwner,
+                myStrategies,
             }}
         >
             <Head title={auction.name} />
@@ -250,12 +251,25 @@ function UnlockedAuctionShow({
 
                                 {auction.status !== 'setup' && (
                                     <>
-                                        {(latestStrategyEntry ||
-                                            strategy.loading) && (
-                                            <AdvisorStrategyBrief
-                                                entry={latestStrategyEntry}
-                                                loading={strategy.loading}
+                                        {viewer.strategy_id !== null &&
+                                        viewer.strategy ? (
+                                            <SelectedStrategyBrief
+                                                strategy={viewer.strategy}
                                             />
+                                        ) : needsStrategyChoice ? (
+                                            <ChooseStrategyDialog
+                                                strategies={myStrategies}
+                                                onGenerateAi={strategy.generate}
+                                                generating={strategy.loading}
+                                            />
+                                        ) : (
+                                            (latestStrategyEntry ||
+                                                strategy.loading) && (
+                                                <AdvisorStrategyBrief
+                                                    entry={latestStrategyEntry}
+                                                    loading={strategy.loading}
+                                                />
+                                            )
                                         )}
 
                                         <CurrentCallPanel />

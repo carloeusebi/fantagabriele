@@ -8,6 +8,7 @@ use App\Events\Auction\AuctionDeleted;
 use App\Exceptions\Auction\AuctionRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auction\JoinAuctionRequest;
+use App\Http\Requests\Auction\SelectAuctionStrategyRequest;
 use App\Http\Requests\Auction\StoreAuctionRequest;
 use App\Http\Requests\Auction\UnlockAuctionRequest;
 use App\Http\Requests\Auction\UpdateAuctionStatusRequest;
@@ -131,6 +132,8 @@ class AuctionController extends Controller
             ->orderBy('created_at')
             ->get();
 
+        $viewer?->loadMissing('strategy.priorityPlayers.team');
+
         return Inertia::render('auctions/show', [
             'locked' => false,
             'auction' => $auction,
@@ -141,7 +144,16 @@ class AuctionController extends Controller
             'advisorEntries' => $advisorEntries,
             'viewer' => $viewer ? [
                 'auction_participant_id' => $viewer->auction_participant_id,
+                'strategy_id' => $viewer->strategy_id,
+                'strategy' => $viewer->strategy?->toBriefArray(),
             ] : null,
+            'myStrategies' => $request->user()->strategies()->get(['id', 'name', 'type'])
+                ->map(fn ($strategy) => [
+                    'id' => $strategy->id,
+                    'name' => $strategy->name,
+                    'type' => $strategy->type->value,
+                    'type_label' => $strategy->type->label(),
+                ])->values(),
             'permissions' => [
                 'manage' => Gate::allows('manageParticipants', $auction),
                 'updateStatus' => Gate::allows('updateStatus', $auction),
@@ -176,6 +188,26 @@ class AuctionController extends Controller
             : null;
 
         $engine->joinAuction($auction, $request->user(), $participant);
+
+        return back();
+    }
+
+    /**
+     * Let a user who has claimed a participant pick one of their own saved
+     * strategies to guide the AI advisor for the rest of this auction (or
+     * relinquish it back to null, e.g. to ask the AI to build one instead).
+     */
+    public function selectStrategy(SelectAuctionStrategyRequest $request, Auction $auction): RedirectResponse
+    {
+        Gate::authorize('advise', $auction);
+
+        $viewer = $auction->viewerFor($request->user());
+
+        if ($viewer === null) {
+            throw AuctionRuleException::because('Devi partecipare all\'asta per scegliere una strategia.');
+        }
+
+        $viewer->update(['strategy_id' => $request->validated('strategy_id')]);
 
         return back();
     }

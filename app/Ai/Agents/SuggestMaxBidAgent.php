@@ -33,12 +33,31 @@ class SuggestMaxBidAgent implements Agent, Conversational, HasStructuredOutput, 
 
             Se in questa conversazione avevi già definito un piano strategico, tienine conto ma aggiornalo se l'andamento dell'asta lo richiede, spiegando nel "reasoning" cosa è cambiato.
 
+            {$this->userStrategyGuidance()}
+
             Puoi anche suggerire un prezzo "bluff" più alto del valore reale del giocatore, con l'obiettivo di far spendere crediti a un avversario specifico su un giocatore che a te non interessa davvero. Se lo fai, imposta "is_bluff" a true e avverti SEMPRE chiaramente nel "reasoning" del rischio: se nessuno rilancia oltre quella cifra, il giocatore se lo aggiudica comunque l'utente, a quel prezzo.
 
             Il prezzo massimo non può mai superare i crediti residui del partecipante controllato.
 
             Contesto (JSON):
             {$this->encodedContext()}
+            TEXT;
+    }
+
+    /**
+     * Extra guidance rendered only when the user has picked one of their own
+     * saved strategies ("user_strategy" in the context) — nudges this bid
+     * suggestion toward their declared budget split, priority targets, and
+     * free comment.
+     */
+    private function userStrategyGuidance(): string
+    {
+        if ($this->context->userStrategy === null) {
+            return '';
+        }
+
+        return <<<'TEXT'
+            L'utente ha dichiarato un proprio piano in "user_strategy": tienine conto seriamente per questo prezzo massimo. Se questo giocatore è tra i "priority_players", puoi essere più generoso; rispetta comunque lo spirito della ripartizione in "budget_plan" e il "comment" libero dell'utente.
             TEXT;
     }
 

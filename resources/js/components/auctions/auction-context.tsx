@@ -10,6 +10,7 @@ import type {
     PlayerAssignment,
     RoleOption,
 } from '@/types/auction';
+import type { StrategyListItem } from '@/types/strategy';
 
 type OnlineUser = { id: number; name: string };
 
@@ -25,6 +26,7 @@ type AuctionContextValue = {
     roles: RoleOption[];
     online: OnlineUser[];
     isOwner: boolean;
+    myStrategies: StrategyListItem[];
 };
 
 const AuctionContext = createContext<AuctionContextValue | null>(null);
@@ -48,6 +50,7 @@ export function AuctionProvider({
         roles,
         online,
         isOwner,
+        myStrategies,
     },
     children,
 }: {
@@ -67,6 +70,7 @@ export function AuctionProvider({
             roles,
             online,
             isOwner,
+            myStrategies,
         }),
         [
             auction,
@@ -80,6 +84,7 @@ export function AuctionProvider({
             roles,
             online,
             isOwner,
+            myStrategies,
         ],
     );
 

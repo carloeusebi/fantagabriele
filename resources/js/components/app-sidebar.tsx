@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Gavel, Users } from 'lucide-react';
+import { Gavel, ListChecks, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { index as auctionsIndex } from '@/routes/auctions';
 import { index as playersIndex } from '@/routes/players';
+import { index as strategiesIndex } from '@/routes/strategies';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +28,11 @@ const mainNavItems: NavItem[] = [
         title: 'Giocatori',
         href: playersIndex(),
         icon: Users,
+    },
+    {
+        title: 'Strategie',
+        href: strategiesIndex(),
+        icon: ListChecks,
     },
 ];
 

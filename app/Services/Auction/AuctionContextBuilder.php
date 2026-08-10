@@ -63,6 +63,7 @@ class AuctionContextBuilder
             otherParticipants: $others->map->toBoardArray()->values()->all(),
             availablePlayers: $availablePlayers,
             recentPurchases: $this->recentPurchases($auction),
+            userStrategy: $this->userStrategy($controlledParticipant),
         );
     }
 
@@ -86,6 +87,7 @@ class AuctionContextBuilder
             competitorsNeedingRole: $competitorsNeedingRole,
             remainingPoolSize: $remainingPoolSize,
             recentPurchases: $this->recentPurchases($auction),
+            userStrategy: $this->userStrategy($controlledParticipant),
         );
     }
 
@@ -120,7 +122,21 @@ class AuctionContextBuilder
             otherParticipants: $others->map->toBoardArray()->values()->all(),
             recentPurchases: $this->recentPurchases($auction),
             availablePlayersByRole: $availablePlayersByRole,
+            userStrategy: $this->userStrategy($controlledParticipant),
         );
+    }
+
+    /**
+     * The participant's own claimer may have picked one of their saved
+     * strategies to guide the AI instead of letting it build one from
+     * scratch. When present, every agent (strategy/call/bid) should weigh
+     * it heavily.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function userStrategy(AuctionParticipant $controlledParticipant): ?array
+    {
+        return $controlledParticipant->viewer?->strategy?->toBriefArray();
     }
 
     /**

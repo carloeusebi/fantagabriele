@@ -33,12 +33,31 @@ class SuggestCallAgent implements Agent, Conversational, HasStructuredOutput, Ha
 
             Se in questa conversazione avevi già definito un piano strategico o dei giocatori obiettivo, tienine conto ma aggiornalo liberamente se l'andamento dell'asta lo richiede (prezzi pagati finora, giocatori già assegnati ad altri): spiega brevemente nel "reasoning" se e perché ti stai discostando dal piano iniziale.
 
+            {$this->userStrategyGuidance()}
+
             Puoi anche suggerire un "bluff": chiamare un giocatore che non ti interessa davvero, solo per far spendere crediti agli avversari o consumare il turno di un rivale su un giocatore che non vuoi si aggiudichi a poco. Se lo fai, imposta "is_bluff" a true e spiega SEMPRE chiaramente nel "reasoning" che si tratta di un bluff e perché.
 
             Rispondi SOLO con l'id di un giocatore presente in "available_players".
 
             Contesto (JSON):
             {$this->encodedContext()}
+            TEXT;
+    }
+
+    /**
+     * Extra guidance rendered only when the user has picked one of their own
+     * saved strategies ("user_strategy" in the context) — nudges this call
+     * suggestion toward their declared budget split, priority targets, and
+     * free comment.
+     */
+    private function userStrategyGuidance(): string
+    {
+        if ($this->context->userStrategy === null) {
+            return '';
+        }
+
+        return <<<'TEXT'
+            L'utente ha dichiarato un proprio piano in "user_strategy": tienine conto seriamente in questa chiamata. Rispetta la ripartizione del budget in "budget_plan", dai priorità ai giocatori in "priority_players" se disponibili in questo ruolo, e considera il "comment" libero dell'utente.
             TEXT;
     }
 

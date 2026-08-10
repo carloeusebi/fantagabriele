@@ -10,6 +10,7 @@ final class StrategyContext
      * @param  array<int, array<string, mixed>>  $otherParticipants
      * @param  array<int, array<string, mixed>>  $recentPurchases
      * @param  array<string, array<int, array<string, mixed>>>  $availablePlayersByRole
+     * @param  array<string, mixed>|null  $userStrategy
      */
     public function __construct(
         public int $budgetPerParticipant,
@@ -18,6 +19,7 @@ final class StrategyContext
         public array $otherParticipants,
         public array $recentPurchases,
         public array $availablePlayersByRole,
+        public ?array $userStrategy = null,
     ) {}
 
     /**
@@ -32,6 +34,7 @@ final class StrategyContext
             'other_participants' => $this->otherParticipants,
             'recent_purchases' => $this->recentPurchases,
             'available_players_by_role' => $this->availablePlayersByRole,
+            'user_strategy' => $this->userStrategy,
         ];
     }
 }

@@ -14,8 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $auction_id
  * @property int $user_id
  * @property int|null $auction_participant_id
+ * @property int|null $strategy_id
  */
-#[Fillable(['auction_id', 'user_id', 'auction_participant_id'])]
+#[Fillable(['auction_id', 'user_id', 'auction_participant_id', 'strategy_id'])]
 class AuctionViewer extends Model
 {
     /**
@@ -45,5 +46,13 @@ class AuctionViewer extends Model
     public function isSpectator(): bool
     {
         return $this->auction_participant_id === null;
+    }
+
+    /**
+     * @return BelongsTo<Strategy, $this>
+     */
+    public function strategy(): BelongsTo
+    {
+        return $this->belongsTo(Strategy::class);
     }
 }

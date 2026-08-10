@@ -18,7 +18,11 @@ export function RoleChooser({ onChosen }: { onChosen?: () => void }) {
                 viewer: AuctionViewer | null;
                 participants: AuctionParticipant[];
             }>(() => ({
-                viewer: { auction_participant_id: participantId },
+                viewer: {
+                    auction_participant_id: participantId,
+                    strategy_id: viewer?.strategy_id ?? null,
+                    strategy: viewer?.strategy ?? null,
+                },
                 participants: participants.map((participant) => {
                     if (participant.id === currentParticipantId) {
                         return {
