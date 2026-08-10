@@ -1,7 +1,10 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useAuction } from '@/components/auctions/auction-context';
 import { PlayerCombobox } from '@/components/auctions/player-combobox';
+import { RoleLetter } from '@/components/auctions/role-letter';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -30,6 +33,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useInitials } from '@/hooks/use-initials';
 import { hasCompletedRole } from '@/lib/auction';
 import auctionAssignments from '@/routes/auctions/assignments';
 import type {
@@ -38,30 +42,52 @@ import type {
     PlayerAssignment,
 } from '@/types/auction';
 
-export function AssignmentHistory({
-    auctionId,
-    assignments,
-    participants,
-    unassignedPlayers,
-    canResolve,
-}: {
-    auctionId: number;
-    assignments: PlayerAssignment[];
-    participants: AuctionParticipant[];
-    unassignedPlayers: Player[];
-    canResolve: boolean;
-}) {
+export function AssignmentHistory() {
+    const {
+        auction,
+        assignments,
+        participants,
+        unassignedPlayers,
+        permissions,
+    } = useAuction();
+    const auctionId = auction.id;
+    const canResolve = permissions.resolveCall;
+    const [search, setSearch] = useState('');
+    const getInitials = useInitials();
+
+    const filteredAssignments = useMemo(() => {
+        const query = search.trim().toLowerCase();
+
+        if (!query) {
+            return assignments;
+        }
+
+        return assignments.filter((assignment) =>
+            [
+                assignment.player.name,
+                assignment.player.team?.name,
+                assignment.participant.name,
+            ].some((value) => value?.toLowerCase().includes(query)),
+        );
+    }, [assignments, search]);
+
     return (
         <div className="space-y-3">
-            {canResolve && (
-                <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-2">
+                <Input
+                    placeholder="Cerca giocatore o partecipante..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="max-w-sm"
+                />
+                {canResolve && (
                     <AddAssignmentDialog
                         auctionId={auctionId}
                         participants={participants}
                         unassignedPlayers={unassignedPlayers}
                     />
-                </div>
-            )}
+                )}
+            </div>
 
             {assignments.length === 0 ? (
                 <Empty>
@@ -69,6 +95,13 @@ export function AssignmentHistory({
                     <EmptyDescription>
                         Le assegnazioni registrate durante l'asta compariranno
                         qui.
+                    </EmptyDescription>
+                </Empty>
+            ) : filteredAssignments.length === 0 ? (
+                <Empty>
+                    <EmptyTitle>Nessun risultato</EmptyTitle>
+                    <EmptyDescription>
+                        Nessuna assegnazione corrisponde alla ricerca.
                     </EmptyDescription>
                 </Empty>
             ) : (
@@ -83,16 +116,41 @@ export function AssignmentHistory({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {assignments.map((assignment) => (
+                            {filteredAssignments.map((assignment) => (
                                 <TableRow key={assignment.id}>
                                     <TableCell>
-                                        {assignment.player.name}
-                                        {assignment.player.team
-                                            ? ` (${assignment.player.team.name})`
-                                            : ''}
+                                        <span className="flex items-center gap-2">
+                                            <RoleLetter
+                                                role={assignment.player.role}
+                                            />
+                                            {assignment.player.name}
+                                            {assignment.player.team
+                                                ? ` (${assignment.player.team.name})`
+                                                : ''}
+                                        </span>
                                     </TableCell>
                                     <TableCell>
-                                        {assignment.participant.name}
+                                        <span className="flex items-center gap-2">
+                                            <Avatar className="h-6 w-6 shrink-0 overflow-hidden rounded-full">
+                                                <AvatarImage
+                                                    src={
+                                                        assignment.participant
+                                                            .avatar ?? undefined
+                                                    }
+                                                    alt={
+                                                        assignment.participant
+                                                            .name
+                                                    }
+                                                />
+                                                <AvatarFallback className="rounded-full bg-neutral-200 text-xs text-black dark:bg-neutral-700 dark:text-white">
+                                                    {getInitials(
+                                                        assignment.participant
+                                                            .name,
+                                                    )}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {assignment.participant.name}
+                                        </span>
                                     </TableCell>
                                     <TableCell>{assignment.price}</TableCell>
                                     <TableCell className="flex justify-end gap-2">
@@ -101,9 +159,7 @@ export function AssignmentHistory({
                                                 <CorrectAssignmentDialog
                                                     auctionId={auctionId}
                                                     assignment={assignment}
-                                                    participants={
-                                                        participants
-                                                    }
+                                                    participants={participants}
                                                 />
                                                 <RevertAssignmentDialog
                                                     auctionId={auctionId}
@@ -190,8 +246,7 @@ function AddAssignmentDialog({
                 <DialogTitle>Aggiungi assegnazione</DialogTitle>
                 <p className="text-sm text-muted-foreground">
                     Assegna manualmente un giocatore, di qualsiasi ruolo, a un
-                    partecipante. Utile per rettificare una transazione
-                    errata.
+                    partecipante. Utile per rettificare una transazione errata.
                 </p>
 
                 <form onSubmit={submit} className="space-y-4">

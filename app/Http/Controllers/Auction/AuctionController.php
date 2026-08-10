@@ -105,9 +105,21 @@ class AuctionController extends Controller
 
         $assignments = PlayerAssignment::query()
             ->where('auction_id', $auction->id)
-            ->with(['player.team', 'participant'])
+            ->with(['player.team', 'participant.viewer.user'])
             ->latest()
-            ->get();
+            ->get()
+            ->map(fn (PlayerAssignment $assignment) => [
+                'id' => $assignment->id,
+                'auction_participant_id' => $assignment->auction_participant_id,
+                'player_id' => $assignment->player_id,
+                'price' => $assignment->price,
+                'player' => $assignment->player,
+                'participant' => [
+                    'id' => $assignment->participant->id,
+                    'name' => $assignment->participant->name,
+                    'avatar' => $assignment->participant->viewer?->user?->avatar,
+                ],
+            ]);
 
         $claimedParticipant = $viewer?->auction_participant_id
             ? AuctionParticipant::query()->find($viewer->auction_participant_id)

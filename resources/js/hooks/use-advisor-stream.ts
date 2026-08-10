@@ -15,9 +15,10 @@ const initialState = {
 };
 
 /**
- * Consumes the auction advisor's SSE endpoint: the "delta" event carries
- * narration text chunks as the AI reasons out loud, and the stream ends
- * with either a "result" event (the final structured suggestion) or a
+ * Consumes the auction advisor's SSE endpoint: the "result" event carries
+ * the structured suggestion as soon as it's decided (before narration even
+ * starts), "delta" events carry narration text chunks as the AI explains
+ * that decision, and the stream ends with either a "complete" event or a
  * "failure" event (a domain error that couldn't become a normal HTTP error
  * response, since streaming had already started).
  */
@@ -36,7 +37,9 @@ export function useAdvisorStream<TResult>() {
         sourceRef.current = source;
 
         source.addEventListener('delta', (event) => {
-            const chunk = (event as MessageEvent<string>).data;
+            const chunk = JSON.parse(
+                (event as MessageEvent<string>).data,
+            ) as string;
 
             setState((current) => ({
                 ...current,
@@ -49,7 +52,11 @@ export function useAdvisorStream<TResult>() {
                 (event as MessageEvent<string>).data,
             ) as TResult;
 
-            setState((current) => ({ ...current, result, streaming: false }));
+            setState((current) => ({ ...current, result }));
+        });
+
+        source.addEventListener('complete', () => {
+            setState((current) => ({ ...current, streaming: false }));
             source.close();
         });
 

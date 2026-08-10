@@ -109,14 +109,23 @@ class LaravelAiAuctionAssistant implements AuctionAssistant
     }
 
     /**
-     * @return Generator<int, string, mixed, CallSuggestion>
+     * Decides the call first, yields that decision immediately so the caller
+     * can show it right away, then narrates the reasoning behind it — rather
+     * than narrating and deciding as two independent (and possibly
+     * diverging) lines of reasoning.
+     *
+     * @return Generator<int, CallSuggestion|string, mixed, CallSuggestion>
      */
     public function streamCall(CallSuggestionContext $context, Auction $auction, User $user): Generator
     {
-        $agent = $this->withConversation(new NarrateCallAgent($context), $auction, $user);
+        $suggestion = $this->suggestCall($context, $auction, $user);
+
+        yield $suggestion;
+
+        $agent = $this->withConversation(new NarrateCallAgent($context, $suggestion), $auction, $user);
 
         $stream = $agent->stream(
-            'Racconta il tuo ragionamento su quale giocatore chiamare.',
+            'Spiega brevemente il ragionamento dietro questa decisione.',
             provider: Lab::OpenAI,
         );
 
@@ -126,18 +135,27 @@ class LaravelAiAuctionAssistant implements AuctionAssistant
             }
         }
 
-        return $this->suggestCall($context, $auction, $user);
+        return $suggestion;
     }
 
     /**
-     * @return Generator<int, string, mixed, BidSuggestion>
+     * Decides the max bid first, yields that decision immediately so the
+     * caller can show it right away, then narrates the reasoning behind it
+     * — rather than narrating and deciding as two independent (and possibly
+     * diverging) lines of reasoning.
+     *
+     * @return Generator<int, BidSuggestion|string, mixed, BidSuggestion>
      */
     public function streamMaxBid(BidSuggestionContext $context, Auction $auction, User $user): Generator
     {
-        $agent = $this->withConversation(new NarrateBidAgent($context), $auction, $user);
+        $suggestion = $this->suggestMaxBid($context, $auction, $user);
+
+        yield $suggestion;
+
+        $agent = $this->withConversation(new NarrateBidAgent($context, $suggestion), $auction, $user);
 
         $stream = $agent->stream(
-            'Racconta il tuo ragionamento sul prezzo massimo da offrire.',
+            'Spiega brevemente il ragionamento dietro questa decisione.',
             provider: Lab::OpenAI,
         );
 
@@ -147,7 +165,7 @@ class LaravelAiAuctionAssistant implements AuctionAssistant
             }
         }
 
-        return $this->suggestMaxBid($context, $auction, $user);
+        return $suggestion;
     }
 
     /**

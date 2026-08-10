@@ -43,6 +43,7 @@ export type AuctionParticipant = {
     call_order: number;
     claimed_by: string | null;
     claimed_by_user_id: number | null;
+    claimed_by_avatar: string | null;
     budget_remaining: number;
     slots: RosterSlot[];
     roster: RosterEntry[];
@@ -107,5 +108,5 @@ export type PlayerAssignment = {
     player_id: number;
     price: number;
     player: Player;
-    participant: { id: number; name: string };
+    participant: { id: number; name: string; avatar: string | null };
 };

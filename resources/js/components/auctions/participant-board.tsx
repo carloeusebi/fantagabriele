@@ -1,27 +1,23 @@
+import { useAuction } from '@/components/auctions/auction-context';
 import { RoleLetter } from '@/components/auctions/role-letter';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useInitials } from '@/hooks/use-initials';
 import { hasCompletedRole } from '@/lib/auction';
 import { ROLE_ORDER, roleBadgeClasses } from '@/lib/role-colors';
 import { cn } from '@/lib/utils';
-import type {
-    AuctionParticipant,
-    PlayerRoleValue,
-    RosterEntry,
-} from '@/types/auction';
+import type { RosterEntry } from '@/types/auction';
 
-export function ParticipantBoard({
-    participants,
-    currentTurnParticipantId,
-    currentPhase = null,
-    onlineUserIds = [],
-}: {
-    participants: AuctionParticipant[];
-    currentTurnParticipantId: number | null;
-    currentPhase?: PlayerRoleValue | null;
-    onlineUserIds?: number[];
-}) {
+export function ParticipantBoard() {
+    const { auction, participants, online } = useAuction();
+    const currentTurnParticipantId =
+        auction.current_turn_auction_participant_id;
+    const currentPhase = auction.current_phase;
+    const onlineUserIds = online.map((user) => user.id);
+    const getInitials = useInitials();
+
     return (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {participants.map((participant) => (
@@ -46,6 +42,26 @@ export function ParticipantBoard({
                                             title="Online"
                                         />
                                     )}
+                                {participant.claimed_by_user_id !== null && (
+                                    <Avatar className="h-6 w-6 shrink-0 overflow-hidden rounded-full">
+                                        <AvatarImage
+                                            src={
+                                                participant.claimed_by_avatar ??
+                                                undefined
+                                            }
+                                            alt={
+                                                participant.claimed_by ??
+                                                participant.name
+                                            }
+                                        />
+                                        <AvatarFallback className="rounded-full bg-neutral-200 text-xs text-black dark:bg-neutral-700 dark:text-white">
+                                            {getInitials(
+                                                participant.claimed_by ??
+                                                    participant.name,
+                                            )}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                )}
                                 {participant.name}
                             </span>
                             <span className="text-sm font-normal text-muted-foreground">

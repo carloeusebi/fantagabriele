@@ -35,8 +35,18 @@ class AuctionAdvisorController extends Controller
             try {
                 $stream = $assistant->streamCall($context, $auction, $user);
 
-                foreach ($stream as $delta) {
-                    yield new StreamedEvent(event: 'delta', data: $delta);
+                foreach ($stream as $item) {
+                    if ($item instanceof CallSuggestion) {
+                        yield new StreamedEvent(event: 'result', data: json_encode([
+                            'player_id' => $item->playerId,
+                            'reasoning' => $item->reasoning,
+                            'is_bluff' => $item->isBluff,
+                        ], JSON_THROW_ON_ERROR));
+
+                        continue;
+                    }
+
+                    yield new StreamedEvent(event: 'delta', data: json_encode($item, JSON_THROW_ON_ERROR));
                 }
 
                 /** @var CallSuggestion $suggestion */
@@ -46,11 +56,7 @@ class AuctionAdvisorController extends Controller
                     'player_id' => $suggestion->playerId,
                 ], $suggestion->isBluff);
 
-                yield new StreamedEvent(event: 'result', data: json_encode([
-                    'player_id' => $suggestion->playerId,
-                    'reasoning' => $suggestion->reasoning,
-                    'is_bluff' => $suggestion->isBluff,
-                ], JSON_THROW_ON_ERROR));
+                yield new StreamedEvent(event: 'complete', data: json_encode([]));
             } catch (Throwable $e) {
                 yield new StreamedEvent(event: 'failure', data: json_encode([
                     'message' => $this->failureMessage($e),
@@ -78,8 +84,18 @@ class AuctionAdvisorController extends Controller
             try {
                 $stream = $assistant->streamMaxBid($context, $auction, $user);
 
-                foreach ($stream as $delta) {
-                    yield new StreamedEvent(event: 'delta', data: $delta);
+                foreach ($stream as $item) {
+                    if ($item instanceof BidSuggestion) {
+                        yield new StreamedEvent(event: 'result', data: json_encode([
+                            'max_price' => $item->maxPrice,
+                            'reasoning' => $item->reasoning,
+                            'is_bluff' => $item->isBluff,
+                        ], JSON_THROW_ON_ERROR));
+
+                        continue;
+                    }
+
+                    yield new StreamedEvent(event: 'delta', data: json_encode($item, JSON_THROW_ON_ERROR));
                 }
 
                 /** @var BidSuggestion $suggestion */
@@ -89,11 +105,7 @@ class AuctionAdvisorController extends Controller
                     'max_price' => $suggestion->maxPrice,
                 ], $suggestion->isBluff);
 
-                yield new StreamedEvent(event: 'result', data: json_encode([
-                    'max_price' => $suggestion->maxPrice,
-                    'reasoning' => $suggestion->reasoning,
-                    'is_bluff' => $suggestion->isBluff,
-                ], JSON_THROW_ON_ERROR));
+                yield new StreamedEvent(event: 'complete', data: json_encode([]));
             } catch (Throwable $e) {
                 yield new StreamedEvent(event: 'failure', data: json_encode([
                     'message' => $this->failureMessage($e),

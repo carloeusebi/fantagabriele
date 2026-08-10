@@ -3,11 +3,15 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { AdvisorStrategyBrief } from '@/components/auctions/advisor-strategy-brief';
-import { AdvisorTranscript } from '@/components/auctions/advisor-transcript';
 import { AssignmentHistory } from '@/components/auctions/assignment-history';
+import {
+    AuctionProvider,
+    useAuction,
+} from '@/components/auctions/auction-context';
 import { CallOrderEditor } from '@/components/auctions/call-order-editor';
 import { CurrentCallPanel } from '@/components/auctions/current-call-panel';
 import { ParticipantBoard } from '@/components/auctions/participant-board';
+import { RealtimeEventLogPanel } from '@/components/auctions/realtime-event-log-panel';
 import { RoleChooser } from '@/components/auctions/role-chooser';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -188,7 +192,21 @@ function UnlockedAuctionShow({
     }, [auction.status, permissions.advise, latestStrategyEntry]);
 
     return (
-        <>
+        <AuctionProvider
+            value={{
+                auction,
+                participants,
+                availablePlayers,
+                unassignedPlayers,
+                assignments,
+                advisorEntries,
+                viewer,
+                permissions,
+                roles,
+                online,
+                isOwner,
+            }}
+        >
             <Head title={auction.name} />
 
             <div className="flex flex-col gap-6 p-4">
@@ -207,130 +225,87 @@ function UnlockedAuctionShow({
                         <Badge variant="outline">
                             {statusLabels[auction.status]}
                         </Badge>
-                        {permissions.updateStatus && (
-                            <StatusControls auction={auction} />
-                        )}
-                        {isOwner && <DeleteAuctionDialog auction={auction} />}
+                        {permissions.updateStatus && <StatusControls />}
+                        {isOwner && <DeleteAuctionDialog />}
                     </div>
                 </div>
 
-                {viewer === null ? (
-                    <JoinAuctionGate
-                        auctionId={auction.id}
-                        participants={participants}
-                    />
-                ) : (
-                    <>
-                        <ViewerIndicator
-                            auctionId={auction.id}
-                            participants={participants}
-                            viewer={viewer}
-                            online={online}
-                        />
-
-                        {auction.status === 'setup' &&
-                            (permissions.manage ? (
-                                <SetupPanel
-                                    auction={auction}
-                                    participants={participants}
-                                />
-                            ) : (
-                                <p className="text-sm text-muted-foreground">
-                                    In attesa che l'organizzatore configuri
-                                    l'asta.
-                                </p>
-                            ))}
-
-                        {auction.status !== 'setup' && (
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="flex flex-col gap-6 lg:col-span-2">
+                        {viewer === null ? (
+                            <JoinAuctionGate />
+                        ) : (
                             <>
-                                {(latestStrategyEntry || strategy.loading) && (
-                                    <AdvisorStrategyBrief
-                                        entry={latestStrategyEntry}
-                                        loading={strategy.loading}
-                                    />
+                                <ViewerIndicator />
+
+                                {auction.status === 'setup' &&
+                                    (permissions.manage ? (
+                                        <SetupPanel />
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            In attesa che l'organizzatore
+                                            configuri l'asta.
+                                        </p>
+                                    ))}
+
+                                {auction.status !== 'setup' && (
+                                    <>
+                                        {(latestStrategyEntry ||
+                                            strategy.loading) && (
+                                            <AdvisorStrategyBrief
+                                                entry={latestStrategyEntry}
+                                                loading={strategy.loading}
+                                            />
+                                        )}
+
+                                        <CurrentCallPanel />
+
+                                        <ParticipantBoard />
+
+                                        <div>
+                                            <Heading
+                                                variant="small"
+                                                title="Storico assegnazioni"
+                                            />
+                                            <div className="mt-3">
+                                                <AssignmentHistory />
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
-
-                                <CurrentCallPanel
-                                    auction={auction}
-                                    participants={participants}
-                                    availablePlayers={availablePlayers}
-                                    canCall={permissions.call}
-                                    canResolve={permissions.resolveCall}
-                                    canAdviseCall={permissions.adviseCall}
-                                    canAdviseBid={permissions.advise}
-                                />
-
-                                <ParticipantBoard
-                                    participants={participants}
-                                    currentTurnParticipantId={
-                                        auction.current_turn_auction_participant_id
-                                    }
-                                    currentPhase={auction.current_phase}
-                                    onlineUserIds={online.map((u) => u.id)}
-                                />
-
-                                <div>
-                                    <Heading
-                                        variant="small"
-                                        title="Storico assegnazioni"
-                                    />
-                                    <div className="mt-3">
-                                        <AssignmentHistory
-                                            auctionId={auction.id}
-                                            assignments={assignments}
-                                            participants={participants}
-                                            unassignedPlayers={
-                                                unassignedPlayers
-                                            }
-                                            canResolve={permissions.resolveCall}
-                                        />
-                                    </div>
-                                </div>
-
-                                <AdvisorTranscript entries={advisorEntries} />
                             </>
                         )}
-                    </>
-                )}
+                    </div>
+
+                    <div className="lg:col-span-1">
+                        <RealtimeEventLogPanel />
+                    </div>
+                </div>
             </div>
-        </>
+        </AuctionProvider>
     );
 }
 
-function JoinAuctionGate({
-    auctionId,
-    participants,
-}: {
-    auctionId: number;
-    participants: AuctionParticipant[];
-}) {
+function JoinAuctionGate() {
     return (
         <Card className="max-w-md">
             <CardHeader>
                 <CardTitle>Come vuoi partecipare?</CardTitle>
             </CardHeader>
             <CardContent>
-                <RoleChooser
-                    auctionId={auctionId}
-                    participants={participants}
-                    currentParticipantId={null}
-                />
+                <RoleChooser />
             </CardContent>
         </Card>
     );
 }
 
-function ViewerIndicator({
-    auctionId,
-    participants,
-    viewer,
-    online,
-}: {
-    auctionId: number;
-    participants: AuctionParticipant[];
-    viewer: AuctionViewer;
-    online: { id: number; name: string }[];
-}) {
+function ViewerIndicator() {
+    const { participants, viewer, online } = useAuction();
+
+    if (viewer === null) {
+        return null;
+    }
+
     const participant = participants.find(
         (p) => p.id === viewer.auction_participant_id,
     );
@@ -352,11 +327,7 @@ function ViewerIndicator({
                     </DialogTrigger>
                     <DialogContent>
                         <DialogTitle>Cambia il tuo ruolo</DialogTitle>
-                        <RoleChooser
-                            auctionId={auctionId}
-                            participants={participants}
-                            currentParticipantId={viewer.auction_participant_id}
-                        />
+                        <RoleChooser />
                     </DialogContent>
                 </Dialog>
             </div>
@@ -378,7 +349,9 @@ function ViewerIndicator({
     );
 }
 
-function StatusControls({ auction }: { auction: Auction }) {
+function StatusControls() {
+    const { auction } = useAuction();
+
     function update(action: 'start' | 'pause' | 'resume') {
         router.patch(auctionStatus.update(auction.id).url, { action });
     }
@@ -402,7 +375,9 @@ function StatusControls({ auction }: { auction: Auction }) {
     return null;
 }
 
-function DeleteAuctionDialog({ auction }: { auction: Auction }) {
+function DeleteAuctionDialog() {
+    const { auction } = useAuction();
+
     function destroy() {
         router.delete(auctions.destroy(auction.id).url);
     }
@@ -439,13 +414,8 @@ function DeleteAuctionDialog({ auction }: { auction: Auction }) {
     );
 }
 
-function SetupPanel({
-    auction,
-    participants,
-}: {
-    auction: Auction;
-    participants: AuctionParticipant[];
-}) {
+function SetupPanel() {
+    const { auction, participants } = useAuction();
     const [name, setName] = useState('');
 
     function addParticipant(event: FormEvent) {
@@ -513,10 +483,7 @@ function SetupPanel({
 
             <div className="space-y-3">
                 <Heading variant="small" title="Ordine di chiamata" />
-                <CallOrderEditor
-                    auctionId={auction.id}
-                    participants={participants}
-                />
+                <CallOrderEditor />
             </div>
         </div>
     );

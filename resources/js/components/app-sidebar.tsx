@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
         icon: Gavel,
     },
     {
-        title: 'Players',
+        title: 'Giocatori',
         href: playersIndex(),
         icon: Users,
     },

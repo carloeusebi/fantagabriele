@@ -90,6 +90,7 @@ class AuctionParticipant extends Model
             'call_order' => $this->call_order,
             'claimed_by' => $this->viewer?->user?->name,
             'claimed_by_user_id' => $this->viewer?->user_id,
+            'claimed_by_avatar' => $this->viewer?->user?->avatar,
             'budget_remaining' => $this->budgetRemaining(),
             'slots' => collect(PlayerRole::cases())->map(fn (PlayerRole $role) => [
                 'role' => $role->value,

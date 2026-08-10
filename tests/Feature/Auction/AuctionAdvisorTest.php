@@ -53,16 +53,22 @@ class RecordingAuctionAssistant implements AuctionAssistant
 
     public function streamCall(CallSuggestionContext $context, Auction $auction, User $user): Generator
     {
+        $suggestion = $this->suggestCall($context, $auction, $user);
+
+        yield $suggestion;
         yield 'sto pensando...';
 
-        return $this->suggestCall($context, $auction, $user);
+        return $suggestion;
     }
 
     public function streamMaxBid(BidSuggestionContext $context, Auction $auction, User $user): Generator
     {
+        $suggestion = $this->suggestMaxBid($context, $auction, $user);
+
+        yield $suggestion;
         yield 'sto pensando...';
 
-        return $this->suggestMaxBid($context, $auction, $user);
+        return $suggestion;
     }
 }
 

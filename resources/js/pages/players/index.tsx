@@ -1,6 +1,7 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import PlayerController from '@/actions/App/Http/Controllers/PlayerController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -30,10 +31,9 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { roleBadgeClasses } from '@/lib/role-colors';
+import { index as playersIndex } from '@/routes/players';
 import type { Auth } from '@/types';
 import type { PlayerRoleValue } from '@/types/auction';
-import PlayerController from '@/actions/App/Http/Controllers/PlayerController';
-import { index as playersIndex } from '@/routes/players';
 
 type Team = {
     id: number;

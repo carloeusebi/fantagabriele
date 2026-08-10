@@ -4,6 +4,7 @@ namespace App\Ai\Agents;
 
 use App\AuctionAssistant\Data\StrategyContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
@@ -20,6 +21,7 @@ use Stringable;
  * asked in a new advisor conversation, so later call/bid suggestions in the
  * same conversation can refer back to the plan it lays out here.
  */
+#[Temperature(0.75)]
 class StrategyAgent implements Agent, Conversational, HasStructuredOutput, HasTools
 {
     use Promptable, RemembersConversations;

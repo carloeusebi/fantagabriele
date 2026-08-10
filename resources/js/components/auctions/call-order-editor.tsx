@@ -1,16 +1,12 @@
 import { router } from '@inertiajs/react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
+import { useAuction } from '@/components/auctions/auction-context';
 import { Button } from '@/components/ui/button';
 import auctionParticipants from '@/routes/auctions/participants';
-import type { AuctionParticipant } from '@/types/auction';
 
-export function CallOrderEditor({
-    auctionId,
-    participants,
-}: {
-    auctionId: number;
-    participants: AuctionParticipant[];
-}) {
+export function CallOrderEditor() {
+    const { auction, participants } = useAuction();
+    const auctionId = auction.id;
     const ordered = [...participants].sort(
         (a, b) => a.call_order - b.call_order,
     );

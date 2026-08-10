@@ -1,20 +1,14 @@
 import { router } from '@inertiajs/react';
+import { useAuction } from '@/components/auctions/auction-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import auctions from '@/routes/auctions';
-import type { AuctionParticipant } from '@/types/auction';
 
-export function RoleChooser({
-    auctionId,
-    participants,
-    currentParticipantId,
-    onChosen,
-}: {
-    auctionId: number;
-    participants: AuctionParticipant[];
-    currentParticipantId: number | null;
-    onChosen?: () => void;
-}) {
+export function RoleChooser({ onChosen }: { onChosen?: () => void }) {
+    const { auction, participants, viewer } = useAuction();
+    const auctionId = auction.id;
+    const currentParticipantId = viewer?.auction_participant_id ?? null;
+
     function choose(participantId: number | null) {
         router.post(
             auctions.join(auctionId).url,

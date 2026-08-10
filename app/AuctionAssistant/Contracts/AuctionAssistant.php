@@ -25,18 +25,18 @@ interface AuctionAssistant
     public function strategy(StrategyContext $context, Auction $auction, User $user): TeamStrategy;
 
     /**
-     * Stream the assistant's reasoning as free-form text chunks while it
-     * narrates which player it would call, finally returning the same
-     * suggestion suggestCall() would produce.
+     * Decide which player to call (the same decision suggestCall() would
+     * produce), then stream free-form text chunks narrating the reasoning
+     * behind that already-made decision.
      *
      * @return Generator<int, string, mixed, CallSuggestion>
      */
     public function streamCall(CallSuggestionContext $context, Auction $auction, User $user): Generator;
 
     /**
-     * Stream the assistant's reasoning as free-form text chunks while it
-     * narrates how much it would bid, finally returning the same
-     * suggestion suggestMaxBid() would produce.
+     * Decide how much to bid (the same decision suggestMaxBid() would
+     * produce), then stream free-form text chunks narrating the reasoning
+     * behind that already-made decision.
      *
      * @return Generator<int, string, mixed, BidSuggestion>
      */

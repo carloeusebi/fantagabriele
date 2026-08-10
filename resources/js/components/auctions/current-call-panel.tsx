@@ -1,8 +1,11 @@
 import { router } from '@inertiajs/react';
-import { Sparkles } from 'lucide-react';
+import { Loader, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { AdvisorTranscript } from '@/components/auctions/advisor-transcript';
+import { useAuction } from '@/components/auctions/auction-context';
 import { PlayerCombobox } from '@/components/auctions/player-combobox';
+import { MarkdownText } from '@/components/markdown-text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,12 +24,9 @@ import { hasCompletedRole } from '@/lib/auction';
 import auctionAdvisor from '@/routes/auctions/advisor';
 import auctionAssignments from '@/routes/auctions/assignments';
 import auctionCall from '@/routes/auctions/call';
-import type {
-    Auction,
-    AuctionParticipant,
-    Player,
-    PlayerRoleValue,
-} from '@/types/auction';
+import type { Auction } from '@/types/auction';
+import { RoleLetter } from '@/components/auctions/role-letter';
+import { Spinner } from '@/components/ui/spinner';
 
 type CallAdvice = { player_id: number; reasoning: string; is_bluff: boolean };
 type BidAdvice = { max_price: number; reasoning: string; is_bluff: boolean };
@@ -61,77 +61,37 @@ function AdvisorReasoning({
     return (
         <div className="space-y-1">
             {isBluff && <Badge variant="destructive">Bluff</Badge>}
-            <p className="text-sm text-muted-foreground">{reasoning}</p>
+            <MarkdownText className="text-muted-foreground">
+                {reasoning}
+            </MarkdownText>
         </div>
     );
 }
 
-export function CurrentCallPanel({
-    auction,
-    participants,
-    availablePlayers,
-    canCall,
-    canResolve,
-    canAdviseCall,
-    canAdviseBid,
-}: {
-    auction: Auction;
-    participants: AuctionParticipant[];
-    availablePlayers: Player[];
-    canCall: boolean;
-    canResolve: boolean;
-    canAdviseCall: boolean;
-    canAdviseBid: boolean;
-}) {
+export function CurrentCallPanel() {
+    const { auction } = useAuction();
     const call = auction.current_call;
 
     if (call) {
-        return (
-            <ResolveCallForm
-                auctionId={auction.id}
-                call={call}
-                participants={participants}
-                currentPhase={auction.current_phase}
-                canAskForBidAdvice={canAdviseBid}
-                canResolve={canResolve}
-            />
-        );
+        return <ResolveCallForm call={call} />;
     }
 
     if (auction.status !== 'in_progress' || !auction.current_phase) {
         return null;
     }
 
-    return (
-        <OpenCallForm
-            auctionId={auction.id}
-            defaultCallerId={auction.current_turn_participant?.id ?? null}
-            participants={participants}
-            currentPhase={auction.current_phase}
-            availablePlayers={availablePlayers}
-            canAskForCallAdvice={canAdviseCall}
-            canCall={canCall}
-        />
-    );
+    return <OpenCallForm />;
 }
 
-function OpenCallForm({
-    auctionId,
-    defaultCallerId,
-    participants,
-    currentPhase,
-    availablePlayers,
-    canAskForCallAdvice,
-    canCall,
-}: {
-    auctionId: number;
-    defaultCallerId: number | null;
-    participants: AuctionParticipant[];
-    currentPhase: PlayerRoleValue | null;
-    availablePlayers: Player[];
-    canAskForCallAdvice: boolean;
-    canCall: boolean;
-}) {
+function OpenCallForm() {
+    const { auction, participants, availablePlayers, permissions } =
+        useAuction();
+    const auctionId = auction.id;
+    const currentPhase = auction.current_phase;
+    const canAskForCallAdvice = permissions.adviseCall;
+    const canCall = permissions.call;
+    const defaultCallerId = auction.current_turn_participant?.id ?? null;
+
     const [playerId, setPlayerId] = useState<string>('');
     const [callerId, setCallerId] = useState<string>(
         defaultCallerId ? String(defaultCallerId) : '',
@@ -145,10 +105,17 @@ function OpenCallForm({
     useEffect(() => {
         if (advisor.result) {
             setPlayerId(String(advisor.result.player_id));
-            router.reload({ only: ['advisorEntries'] });
         }
     }, [advisor.result]);
 
+    useEffect(() => {
+        if (!advisor.streaming && advisor.result) {
+            router.reload({ only: ['advisorEntries'] });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advisor.streaming]);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
     function submit(event: FormEvent) {
         event.preventDefault();
 
@@ -162,14 +129,19 @@ function OpenCallForm({
                 player_id: Number(playerId),
                 called_by_auction_participant_id: Number(callerId),
             },
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onStart: () => setIsSubmitting(true),
+                onFinish: () => setIsSubmitting(false),
+            },
         );
     }
 
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
                 <CardTitle>Chiama un giocatore</CardTitle>
+                <AdvisorTranscript />
             </CardHeader>
             <CardContent className="space-y-4">
                 {canAskForCallAdvice && (
@@ -236,7 +208,11 @@ function OpenCallForm({
                             </Select>
                         </div>
 
-                        <Button type="submit">Chiama</Button>
+                        <Button type="submit"
+                                disabled={isSubmitting || !playerId || !callerId}
+                        >
+                            {isSubmitting && <Spinner />}
+                            Chiama</Button>
                     </form>
                 ) : (
                     <p className="text-sm text-muted-foreground">
@@ -249,20 +225,16 @@ function OpenCallForm({
 }
 
 function ResolveCallForm({
-    auctionId,
     call,
-    participants,
-    currentPhase,
-    canAskForBidAdvice,
-    canResolve,
 }: {
-    auctionId: number;
     call: NonNullable<Auction['current_call']>;
-    participants: AuctionParticipant[];
-    currentPhase: PlayerRoleValue | null;
-    canAskForBidAdvice: boolean;
-    canResolve: boolean;
 }) {
+    const { auction, participants, permissions } = useAuction();
+    const auctionId = auction.id;
+    const currentPhase = auction.current_phase;
+    const canAskForBidAdvice = permissions.advise;
+    const canResolve = permissions.resolveCall;
+
     const [participantId, setParticipantId] = useState('');
     const [price, setPrice] = useState('');
     const advisor = useAdvisorStream<BidAdvice>();
@@ -274,10 +246,17 @@ function ResolveCallForm({
     useEffect(() => {
         if (advisor.result) {
             setPrice(String(advisor.result.max_price));
-            router.reload({ only: ['advisorEntries'] });
         }
     }, [advisor.result]);
 
+    useEffect(() => {
+        if (!advisor.streaming && advisor.result) {
+            router.reload({ only: ['advisorEntries'] });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advisor.streaming]);
+
+    const [isAssigning, setIsAssigning] = useState(false);
     function assign(event: FormEvent) {
         event.preventDefault();
 
@@ -291,7 +270,11 @@ function ResolveCallForm({
                 auction_participant_id: Number(participantId),
                 price: Number(price),
             },
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onStart: () => setIsAssigning(true),
+                onFinish: () => setIsAssigning(false),
+            },
         );
     }
 
@@ -303,11 +286,14 @@ function ResolveCallForm({
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>
-                    In asta: {call.player?.name}
+            <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+                <CardTitle className="flex items-center gap-1 text-2xl">
+                    In asta:
+                    {call.player && <RoleLetter role={call.player?.role} />}
+                    {call.player?.name}
                     {call.player?.team ? ` (${call.player.team.name})` : ''}
                 </CardTitle>
+                <AdvisorTranscript />
             </CardHeader>
             <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
@@ -387,7 +373,10 @@ function ResolveCallForm({
                             />
                         </div>
 
-                        <Button type="submit">Registra</Button>
+                        <Button type="submit" disabled={isAssigning || !participantId || !price}>
+                            {isAssigning && <Spinner />}
+                            Registra
+                        </Button>
                         <Button
                             type="button"
                             variant="outline"

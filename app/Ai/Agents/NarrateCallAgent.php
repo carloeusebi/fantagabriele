@@ -2,56 +2,55 @@
 
 namespace App\Ai\Agents;
 
+use App\AuctionAssistant\Data\CallSuggestion;
 use App\AuctionAssistant\Data\CallSuggestionContext;
 use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
-use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Promptable;
-use Laravel\Ai\Providers\Tools\WebSearch;
 use Stringable;
 
 /**
- * Narrates the reasoning behind a call suggestion in free-form text, meant
- * to be streamed live to the user. The actual player choice is decided
- * separately by SuggestCallAgent, since a structured decision can't be
- * safely parsed out of a streamed narration.
+ * Narrates, in free-form text meant to be streamed live to the user, the
+ * reasoning behind a call decision that SuggestCallAgent has already made.
+ * This agent never chooses the player itself — it only explains a given
+ * choice — so its narration can't drift from, or take longer to reach
+ * than, the actual decision.
  */
-class NarrateCallAgent implements Agent, Conversational, HasTools
+class NarrateCallAgent implements Agent, Conversational
 {
     use Promptable, RemembersConversations;
 
-    public function __construct(public CallSuggestionContext $context) {}
+    public function __construct(
+        public CallSuggestionContext $context,
+        public CallSuggestion $suggestion,
+    ) {}
 
     /**
      * Get the instructions that the agent should follow.
      */
     public function instructions(): Stringable|string
     {
+        $bluffLabel = $this->suggestion->isBluff ? 'sì' : 'no';
+        $player = collect($this->context->availablePlayers)
+            ->firstWhere('id', $this->suggestion->playerId);
+        $playerName = $player['name'] ?? "id {$this->suggestion->playerId}";
+
         return <<<TEXT
             Sei l'assistente strategico di un partecipante a un'asta del fantacalcio dal vivo. Tocca al tuo turno chiamare un giocatore di ruolo {$this->context->roleLabel}.
 
-            Non basarti sull'FVM o sulla quotazione ufficiale dei giocatori: sono valori generici, non calibrati sui crediti di questa lega (leghe diverse possono avere 200 o 1000 crediti a parità di slot, rendendo l'FVM completamente fuori scala). Valuta invece i giocatori con il tuo giudizio calcistico e, se puoi, verifica con una ricerca web titolarità, infortuni, gerarchie e forma attuale. Usa "budget_per_participant" e "recent_purchases" (i prezzi realmente pagati finora in questa asta) come riferimento di mercato reale.
+            La decisione è GIÀ STATA PRESA da un altro agente, con questo esito:
+            - Giocatore scelto: {$playerName}
+            - Bluff: {$bluffLabel}
+            - Motivazione tecnica: {$this->suggestion->reasoning}
 
-            Dai una priorità fortissima all'attacco (circa il 50-55% del budget totale in una lega classica) e punta a costruire un undici titolare forte, evitando di sprecare crediti su riserve finché la formazione titolare non è coperta.
+            Il tuo UNICO compito è raccontare questa decisione all'utente, come se stessi pensando ad alta voce, in modo naturale e colloquiale. NON scegliere un giocatore diverso, NON contraddire la motivazione tecnica: limitati a riformularla in modo scorrevole.
 
-            Se in questa conversazione avevi già definito un piano, tienine conto ma aggiornalo se l'andamento dell'asta lo richiede, spiegando cosa è cambiato.
-
-            Spiega brevemente in italiano, come se stessi pensando ad alta voce, quale giocatore tra quelli in "available_players" chiameresti e perché. Se si tratta di un bluff (un giocatore che non ti interessa davvero, per far spendere crediti agli avversari), dillo esplicitamente. Concludi con una frase che indichi chiaramente il nome del giocatore scelto.
+            REGOLA FERREA sul formato: massimo 3 frasi brevi, senza elenchi puntati. Poi una riga vuota, seguita SEMPRE da una riga a sé stante, identica in tutto e per tutto a questo formato: "**Chiama**: {$playerName}"
 
             Contesto (JSON):
             {$this->encodedContext()}
             TEXT;
-    }
-
-    /**
-     * @return iterable<int, mixed>
-     */
-    public function tools(): iterable
-    {
-        return [
-            (new WebSearch)->max(5),
-        ];
     }
 
     private function encodedContext(): string
