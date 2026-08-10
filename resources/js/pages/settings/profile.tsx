@@ -1,12 +1,15 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import AvatarController from '@/actions/App/Http/Controllers/Settings/AvatarController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useInitials } from '@/hooks/use-initials';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
@@ -23,6 +26,7 @@ export default function Profile({
     status?: string;
 }) {
     const { auth } = usePage<PageProps>().props;
+    const getInitials = useInitials();
 
     return (
         <>
@@ -36,6 +40,73 @@ export default function Profile({
                     title="Profile"
                     description="Update your name and email address"
                 />
+
+                <div className="space-y-4">
+                    <Label>Avatar</Label>
+
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16">
+                            <AvatarImage
+                                src={auth.user.avatar}
+                                alt={auth.user.name}
+                            />
+                            <AvatarFallback className="text-lg">
+                                {getInitials(auth.user.name)}
+                            </AvatarFallback>
+                        </Avatar>
+
+                        <Form
+                            {...AvatarController.update.form()}
+                            options={{ preserveScroll: true }}
+                            resetOnSuccess
+                            className="flex flex-col gap-2"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="file"
+                                            name="avatar"
+                                            accept="image/*"
+                                            required
+                                            className="text-sm text-muted-foreground file:mr-2 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
+                                        />
+
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            disabled={processing}
+                                        >
+                                            Upload
+                                        </Button>
+
+                                        {auth.user.avatar && (
+                                            <Form
+                                                {...AvatarController.destroy.form()}
+                                                options={{
+                                                    preserveScroll: true,
+                                                }}
+                                            >
+                                                {({ processing: removing }) => (
+                                                    <Button
+                                                        type="submit"
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        disabled={removing}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                )}
+                                            </Form>
+                                        )}
+                                    </div>
+
+                                    <InputError message={errors.avatar} />
+                                </>
+                            )}
+                        </Form>
+                    </div>
+                </div>
 
                 <Form
                     {...ProfileController.update.form()}
